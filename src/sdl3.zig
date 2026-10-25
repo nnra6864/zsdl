@@ -3113,6 +3113,7 @@ pub fn setCursor(cursor: *Cursor) Error!void {
 extern fn SDL_SetCursor(cursor: *Cursor) bool;
 
 /// Get the active cursor.
+///
 /// This function returns a pointer to the current cursor which is owned by the
 /// library. It is not necessary to free the cursor with SDL_DestroyCursor().
 pub fn getCursor() Error!*Cursor {
@@ -3121,12 +3122,20 @@ pub fn getCursor() Error!*Cursor {
 extern fn SDL_GetCursor() ?*Cursor;
 
 /// Get the default cursor.
+///
 /// You do not have to call SDL_DestroyCursor() on the return value, but it is
 /// safe to do so.
 pub fn getDefaultCursor() Error!*Cursor {
     return SDL_GetDefaultCursor() orelse error.SdlError;
 }
 extern fn SDL_GetDefaultCursor() ?*Cursor;
+
+/// Free a previously-created cursor.
+///
+/// Use this function to free cursor resources created with SDL_CreateCursor(),
+/// SDL_CreateColorCursor() or SDL_CreateSystemCursor().
+pub const destroyCursor = SDL_DestroyCursor;
+extern fn SDL_DestroyCursor(cursor: *Cursor) void;
 
 // TODO
 // - SDL_DestroyCursor
