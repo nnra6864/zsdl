@@ -3074,6 +3074,26 @@ pub fn captureMouse(enabled: bool) Error!void {
 }
 extern fn SDL_CaptureMouse(enabled: bool) bool;
 
+/// Create a cursor using the specified bitmap data and mask (in MSB format).
+pub fn createCursor(
+    data: [*]const u8,
+    mask: [*]const u8,
+    w: c_int,
+    h: c_int,
+    hot_x: c_int,
+    hot_y: c_int,
+) Error!*Cursor {
+    return SDL_CreateCursor(data, mask, w, h, hot_x, hot_y) orelse error.SdlError;
+}
+extern fn SDL_CreateCursor(
+    data: [*]const u8,
+    mask: [*]const u8,
+    w: c_int,
+    h: c_int,
+    hot_x: c_int,
+    hot_y: c_int,
+) ?*Cursor;
+
 // TODO
 // - SDL_CreateCursor
 // - SDL_CreateColorCursor
