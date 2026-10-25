@@ -3045,13 +3045,13 @@ extern fn SDL_GetRelativeMouseState(x: ?*f32, y: ?*f32) u32;
 pub const warpMouseInWindow = SDL_WarpMouseInWindow;
 extern fn SDL_WarpMouseInWindow(window: ?*Window, x: f32, y: f32) void;
 
-pub fn warpMouseGlobal(x: f32, y: f32) Error!bool {
+pub fn warpMouseGlobal(x: f32, y: f32) Error!void {
     if (!SDL_WarpMouseGlobal(x, y)) return error.SdlError;
 }
 extern fn SDL_WarpMouseGlobal(x: f32, y: f32) bool;
 
 pub fn setWindowRelativeMouseMode(window: ?*Window, enabled: bool) Error!void {
-    if (SDL_SetWindowRelativeMouseMode(window, enabled)) return error.SdlError;
+    if (!SDL_SetWindowRelativeMouseMode(window, enabled)) return error.SdlError;
 }
 extern fn SDL_SetWindowRelativeMouseMode(window: ?*Window, enabled: bool) bool;
 
