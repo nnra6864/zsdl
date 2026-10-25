@@ -3066,8 +3066,13 @@ extern fn SDL_SetWindowRelativeMouseMode(window: ?*Window, enabled: bool) bool;
 pub const getWindowRelativeMouseMode = SDL_GetWindowRelativeMouseMode;
 extern fn SDL_GetWindowRelativeMouseMode(window: ?*Window) bool;
 
+/// Capture the mouse and to track input outside an SDL window.
+pub fn captureMouse(enabled: bool) Error!void {
+    if (!SDL_CaptureMouse(enabled)) return error.SdlError;
+}
+extern fn SDL_CaptureMouse(enabled: bool) bool;
+
 // TODO
-// - SDL_CaptureMouse
 // - SDL_CreateCursor
 // - SDL_CreateColorCursor
 // - SDL_CreateSystemCursor
