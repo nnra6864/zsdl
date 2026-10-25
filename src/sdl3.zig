@@ -676,6 +676,14 @@ pub fn getVideoDriver(index: u16) ?[:0]const u8 {
 }
 extern fn SDL_GetVideoDriver(index: c_int) [*c]const u8;
 
+pub fn getCurrentVideoDriver() ?[:0]const u8 {
+    if (SDL_GetCurrentVideoDriver()) |ptr| {
+        return std.mem.span(ptr);
+    }
+    return null;
+}
+extern fn SDL_GetCurrentVideoDriver() [*c]const u8;
+
 pub const gl = struct {
     pub const Context = *anyopaque;
 
