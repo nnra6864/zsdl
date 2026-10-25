@@ -1,10 +1,9 @@
 //! SDL3 bindings for Zig
 //! Ordered by category as per https://wiki.libsdl.org/SDL3/APIByCategory
 
-const builtin = @import("builtin");
-
 const std = @import("std");
 const assert = std.debug.assert;
+const builtin = @import("builtin");
 
 test {
     _ = std.testing.refAllDecls(@This());
@@ -683,6 +682,13 @@ pub fn getCurrentVideoDriver() ?[:0]const u8 {
     return null;
 }
 extern fn SDL_GetCurrentVideoDriver() [*c]const u8;
+
+pub fn getDisplayContentScale(display_id: DisplayId) ?f32 {
+    const scale = SDL_GetDisplayContentScale(display_id);
+    if (scale == 0.0) return null;
+    return scale;
+}
+extern fn SDL_GetDisplayContentScale(display_id: DisplayId) f32;
 
 pub const gl = struct {
     pub const Context = *anyopaque;
