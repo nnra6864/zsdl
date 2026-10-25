@@ -3009,7 +3009,11 @@ pub const MouseButtonFlags = packed struct(u32) {
 };
 
 // TODO
-// - SDL_HasMouse
+pub fn hasMouse() bool {
+    return SDL_HasMouse();
+}
+extern fn SDL_HasMouse() bool;
+
 // - SDL_GetMice
 // - SDL_GetMouseNameForID
 
