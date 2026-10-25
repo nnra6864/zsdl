@@ -3094,6 +3094,12 @@ extern fn SDL_CreateCursor(
     hot_y: c_int,
 ) ?*Cursor;
 
+/// Create a color cursor.
+pub fn createColorCursor(surface: *Surface, hot_x: c_int, hot_y: c_int) Error!*Cursor {
+    return SDL_CreateColorCursor(surface, hot_x, hot_y) orelse error.SdlError;
+}
+extern fn SDL_CreateColorCursor(surface: *Surface, hot_x: c_int, hot_y: c_int) ?*Cursor;
+
 // TODO
 // - SDL_CreateCursor
 // - SDL_CreateColorCursor
