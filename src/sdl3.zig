@@ -3055,8 +3055,11 @@ pub fn setWindowRelativeMouseMode(window: ?*Window, enabled: bool) Error!void {
 }
 extern fn SDL_SetWindowRelativeMouseMode(window: ?*Window, enabled: bool) bool;
 
+/// Query whether relative mouse mode is enabled for a window.
+pub const getWindowRelativeMouseMode = SDL_GetWindowRelativeMouseMode;
+extern fn SDL_GetWindowRelativeMouseMode(window: ?*Window) bool;
+
 // TODO
-// - SDL_GetWindowRelativeMouseMode
 // - SDL_CaptureMouse
 // - SDL_CreateCursor
 // - SDL_CreateColorCursor
