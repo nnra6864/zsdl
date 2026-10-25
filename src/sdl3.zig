@@ -3050,8 +3050,12 @@ pub fn warpMouseGlobal(x: f32, y: f32) Error!bool {
 }
 extern fn SDL_WarpMouseGlobal(x: f32, y: f32) bool;
 
+pub fn setWindowRelativeMouseMode(window: ?*Window, enabled: bool) Error!void {
+    if (SDL_SetWindowRelativeMouseMode(window, enabled)) return error.SdlError;
+}
+extern fn SDL_SetWindowRelativeMouseMode(window: ?*Window, enabled: bool) bool;
+
 // TODO
-// - SDL_SetWindowRelativeMouseMode
 // - SDL_GetWindowRelativeMouseMode
 // - SDL_CaptureMouse
 // - SDL_CreateCursor
