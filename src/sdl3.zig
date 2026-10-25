@@ -2971,7 +2971,7 @@ pub const MouseId = enum(u32) { invalid = 0, _ };
 
 pub const Cursor = opaque {};
 
-pub const SystemCursor = enum {
+pub const SystemCursor = enum(c_int) {
     default,
     text,
     wait,
@@ -3100,10 +3100,13 @@ pub fn createColorCursor(surface: *Surface, hot_x: c_int, hot_y: c_int) Error!*C
 }
 extern fn SDL_CreateColorCursor(surface: *Surface, hot_x: c_int, hot_y: c_int) ?*Cursor;
 
+/// Create a system cursor.
+pub fn createSystemCursor(id: SystemCursor) Error!*Cursor {
+    return SDL_CreateSystemCursor(id) orelse error.SdlError;
+}
+extern fn SDL_CreateSystemCursor(id: SystemCursor) ?*Cursor;
+
 // TODO
-// - SDL_CreateCursor
-// - SDL_CreateColorCursor
-// - SDL_CreateSystemCursor
 // - SDL_SetCursor
 // - SDL_GetCursor
 // - SDL_GetDefaultCursor
