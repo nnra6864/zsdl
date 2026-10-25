@@ -3037,7 +3037,9 @@ pub const getMouseState = SDL_GetMouseState;
 extern fn SDL_GetMouseState(x: ?*f32, y: ?*f32) u32;
 
 // TODO
-// - SDL_GetGlobalMouseState
+pub const getGlobalMouseState = SDL_GetGlobalMouseState;
+extern fn SDL_GetGlobalMouseState(x: ?*f32, y: ?*f32) u32;
+
 // - SDL_GetRelativeMouseState
 // - SDL_WarpMouseInWindow
 // - SDL_WarpMouseGlobal
