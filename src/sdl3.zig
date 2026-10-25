@@ -3021,7 +3021,11 @@ pub fn getMice() Error![]MouseId {
 }
 extern fn SDL_GetMice(count: ?*c_int) ?[*]MouseId;
 
-// - SDL_GetMouseNameForID
+pub fn getMouseNameForId(instance_id: MouseId) ?[*:0]const u8 {
+    const name = SDL_GetMouseNameForID(instance_id) orelse return null;
+    return std.mem.span(name);
+}
+extern fn SDL_GetMouseNameForID(instance_id: MouseId) ?[*:0]const u8;
 
 /// Get the window which currently has mouse focus.
 pub const getMouseFocus = SDL_GetMouseFocus;
