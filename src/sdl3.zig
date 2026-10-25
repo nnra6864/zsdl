@@ -695,6 +695,13 @@ pub fn getDisplayContentScale(display_id: DisplayId) ?f32 {
 }
 extern fn SDL_GetDisplayContentScale(display_id: DisplayId) f32;
 
+pub fn getWindowDisplayScale(window: *Window) ?f32 {
+    const scale = SDL_GetWindowDisplayScale(window);
+    if (scale == 0.0) return null;
+    return scale;
+}
+extern fn SDL_GetWindowDisplayScale(window: *Window) f32;
+
 pub const gl = struct {
     pub const Context = *anyopaque;
 
