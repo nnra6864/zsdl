@@ -659,6 +659,11 @@ pub fn getWindowSize(window: *Window, w: ?*c_int, h: ?*c_int) Error!void {
 }
 extern fn SDL_GetWindowSize(window: *Window, w: ?*c_int, h: ?*c_int) bool;
 
+pub fn getWindowSizeInPixels(window: *Window, w: ?*c_int, h: ?*c_int) Error!void {
+    if (!SDL_GetWindowSizeInPixels(window, w, h)) return makeError();
+}
+extern fn SDL_GetWindowSizeInPixels(window: *Window, w: ?*c_int, h: ?*c_int) bool;
+
 pub fn setWindowTitle(window: *Window, title: [:0]const u8) void {
     SDL_SetWindowTitle(window, @ptrCast(title.ptr));
 }
