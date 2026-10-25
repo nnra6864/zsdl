@@ -3120,8 +3120,15 @@ pub fn getCursor() Error!*Cursor {
 }
 extern fn SDL_GetCursor() ?*Cursor;
 
+/// Get the default cursor.
+/// You do not have to call SDL_DestroyCursor() on the return value, but it is
+/// safe to do so.
+pub fn getDefaultCursor() Error!*Cursor {
+    return SDL_GetDefaultCursor() orelse error.SdlError;
+}
+extern fn SDL_GetDefaultCursor() ?*Cursor;
+
 // TODO
-// - SDL_GetDefaultCursor
 // - SDL_DestroyCursor
 
 pub fn showCursor() Error!void {
