@@ -3014,7 +3014,13 @@ pub fn hasMouse() bool {
 }
 extern fn SDL_HasMouse() bool;
 
-// - SDL_GetMice
+pub fn getMice() Error![]MouseId {
+    var count: c_int = 0;
+    const ptr = SDL_GetMice(&count) orelse return Error.SdlError;
+    return ptr[0..@intCast(count)];
+}
+extern fn SDL_GetMice(count: ?*c_int) ?[*]MouseId;
+
 // - SDL_GetMouseNameForID
 
 /// Get the window which currently has mouse focus.
