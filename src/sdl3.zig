@@ -3106,8 +3106,13 @@ pub fn createSystemCursor(id: SystemCursor) Error!*Cursor {
 }
 extern fn SDL_CreateSystemCursor(id: SystemCursor) ?*Cursor;
 
+/// Set the active cursor.
+pub fn setCursor(cursor: *Cursor) Error!void {
+    if (!SDL_SetCursor(cursor)) return error.SdlError;
+}
+extern fn SDL_SetCursor(cursor: *Cursor) bool;
+
 // TODO
-// - SDL_SetCursor
 // - SDL_GetCursor
 // - SDL_GetDefaultCursor
 // - SDL_DestroyCursor
