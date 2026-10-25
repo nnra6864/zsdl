@@ -3036,20 +3036,27 @@ extern fn SDL_GetMouseFocus() ?*Window;
 pub const getMouseState = SDL_GetMouseState;
 extern fn SDL_GetMouseState(x: ?*f32, y: ?*f32) u32;
 
+/// Query the platform for the asynchronous mouse button state and the
+/// desktop-relative platform-cursor position.
 pub const getGlobalMouseState = SDL_GetGlobalMouseState;
 extern fn SDL_GetGlobalMouseState(x: ?*f32, y: ?*f32) u32;
 
+/// Query SDL's cache for the synchronous mouse button state and accumulated
+/// mouse delta since last call.
 pub const getRelativeMouseState = SDL_GetRelativeMouseState;
 extern fn SDL_GetRelativeMouseState(x: ?*f32, y: ?*f32) u32;
 
+/// Move the mouse cursor to the given position within the window.
 pub const warpMouseInWindow = SDL_WarpMouseInWindow;
 extern fn SDL_WarpMouseInWindow(window: ?*Window, x: f32, y: f32) void;
 
+/// Move the mouse to the given position in global screen space.
 pub fn warpMouseGlobal(x: f32, y: f32) Error!void {
     if (!SDL_WarpMouseGlobal(x, y)) return error.SdlError;
 }
 extern fn SDL_WarpMouseGlobal(x: f32, y: f32) bool;
 
+/// Set relative mouse mode for a window.
 pub fn setWindowRelativeMouseMode(window: ?*Window, enabled: bool) Error!void {
     if (!SDL_SetWindowRelativeMouseMode(window, enabled)) return error.SdlError;
 }
