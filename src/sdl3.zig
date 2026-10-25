@@ -3014,6 +3014,7 @@ pub fn hasMouse() bool {
 }
 extern fn SDL_HasMouse() bool;
 
+/// Get a list of currently connected mice.
 pub fn getMice() Error![]MouseId {
     var count: c_int = 0;
     const ptr = SDL_GetMice(&count) orelse return Error.SdlError;
@@ -3021,6 +3022,7 @@ pub fn getMice() Error![]MouseId {
 }
 extern fn SDL_GetMice(count: ?*c_int) ?[*]MouseId;
 
+/// Get the name of a mouse.
 pub fn getMouseNameForId(instance_id: MouseId) ?[*:0]const u8 {
     const name = SDL_GetMouseNameForID(instance_id) orelse return null;
     return std.mem.span(name);
