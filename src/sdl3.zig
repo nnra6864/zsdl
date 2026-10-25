@@ -3112,8 +3112,15 @@ pub fn setCursor(cursor: *Cursor) Error!void {
 }
 extern fn SDL_SetCursor(cursor: *Cursor) bool;
 
+/// Get the active cursor.
+/// This function returns a pointer to the current cursor which is owned by the
+/// library. It is not necessary to free the cursor with SDL_DestroyCursor().
+pub fn getCursor() Error!*Cursor {
+    return SDL_GetCursor() orelse error.SdlError;
+}
+extern fn SDL_GetCursor() ?*Cursor;
+
 // TODO
-// - SDL_GetCursor
 // - SDL_GetDefaultCursor
 // - SDL_DestroyCursor
 
