@@ -3045,8 +3045,12 @@ extern fn SDL_GetRelativeMouseState(x: ?*f32, y: ?*f32) u32;
 pub const warpMouseInWindow = SDL_WarpMouseInWindow;
 extern fn SDL_WarpMouseInWindow(window: ?*Window, x: f32, y: f32) void;
 
+pub fn warpMouseGlobal(x: f32, y: f32) Error!bool {
+    if (!SDL_WarpMouseGlobal(x, y)) return error.SdlError;
+}
+extern fn SDL_WarpMouseGlobal(x: f32, y: f32) bool;
+
 // TODO
-// - SDL_WarpMouseGlobal
 // - SDL_SetWindowRelativeMouseMode
 // - SDL_GetWindowRelativeMouseMode
 // - SDL_CaptureMouse
