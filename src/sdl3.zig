@@ -568,10 +568,28 @@ extern fn SDL_GetVersion(version: *Version) void;
 // Display and Window Management (SDL_video.h)
 //
 //--------------------------------------------------------------------------------------------------
+
+/// This is a unique ID for a display for the time it is connected to the
+/// system, and is never reused for the lifetime of the application.
+///
+/// If the display is disconnected and reconnected, it will get a new ID.
+///
+/// The value 0 is an invalid ID.
 pub const DisplayId = enum(u32) { invalid = 0, _ };
 
+/// This is a unique ID for a window.
+///
+/// The value 0 is an invalid ID.
 pub const WindowId = enum(u32) { invalid = 0, _ };
 
+/// System theme.
+pub const SystemTheme = enum(c_int) {
+    unknown,
+    light,
+    dark,
+};
+
+/// The structure that defines a display mode.
 pub const DisplayMode = extern struct {
     displayId: DisplayId,
     format: PixelFormatEnum,
@@ -584,6 +602,16 @@ pub const DisplayMode = extern struct {
     internal: ?*anyopaque,
 };
 
+/// Display orientation values; the way a display is rotated.
+pub const DisplayOrientation = enum(c_int) {
+    unknown,
+    landscape,
+    landscape_flipped,
+    portrait,
+    portrait_flipped,
+};
+
+/// The struct used as an opaque handle to a window.
 pub const Window = opaque {
     pub const Flags = packed struct(u64) {
         fullscreen: bool = false,
@@ -626,15 +654,53 @@ pub const Window = opaque {
     pub const setTitle = setWindowTitle;
 };
 
+/// A magic value used with `pos_undefined`.
+///
+/// Generally this value isn't used directly, but rather through
+/// `pos_undefined` or `posUndefinedDisplay`.
+const pos_undefined_mask: i32 = 0x1fff_0000;
+
+/// Used to indicate that you don't care what the window position is.
+///
+/// If you _really_ don't care, `pos_undefined` is the same, but always
+/// uses the primary display instead of specifying one.
 pub fn posUndefinedDisplay(x: i32) i32 {
     return pos_undefined_mask | x;
 }
+
+/// Used to indicate that you don't care what the window position/display is.
+///
+/// This always uses the primary display.
+pub const pos_undefined: i32 = posUndefinedDisplay(0);
+
+/// A macro to test if the window position is marked as "undefined."
+pub fn posIsUndefined(x: i32) bool {
+    return (@as(u32, @bitCast(x)) & 0xFFFF0000) == @as(u32, pos_undefined_mask);
+}
+
+/// A magic value used with `pos_centered`.
+///
+/// Generally this value isn't used directly, but rather through
+/// `pos_centered` or `posCenteredDisplay`.
+const pos_centered_mask: i32 = 0x2fff_0000;
+
+/// Used to indicate that the window position should be centered.
+///
+/// `pos_centered` is the same, but always uses the primary display
+/// instead of specifying one.
 pub fn posCenteredDisplay(x: i32) i32 {
     return pos_centered_mask | x;
 }
 
-const pos_undefined_mask: i32 = 0x1fff_0000;
-const pos_centered_mask: i32 = 0x2fff_0000;
+/// Used to indicate that the window position should be centered.
+///
+/// This always uses the primary display.
+pub const pos_centered: i32 = posCenteredDisplay(0);
+
+/// A macro to test if the window position is marked as "centered."
+pub fn posIsCentered(x: i32) bool {
+    return (@as(u32, @bitCast(x)) & 0xFFFF0000) == @as(u32, pos_centered_mask);
+}
 
 pub fn createWindow(title: [:0]const u8, w: c_int, h: c_int, flags: Window.Flags) Error!*Window {
     assert(w > 0);
