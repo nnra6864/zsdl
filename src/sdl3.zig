@@ -3088,9 +3088,7 @@ pub const MouseButtonFlags = packed struct(u32) {
 };
 
 /// Return whether a mouse is currently connected.
-pub fn hasMouse() bool {
-    return SDL_HasMouse();
-}
+pub const hasMouse = SDL_HasMouse;
 extern fn SDL_HasMouse() bool;
 
 /// Get a list of currently connected mice.
