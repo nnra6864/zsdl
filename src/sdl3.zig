@@ -2981,7 +2981,7 @@ pub const MouseId = enum(u32) { invalid = 0, _ };
 /// This is opaque data.
 pub const Cursor = opaque {};
 
-/// Cursor types for SDL_CreateSystemCursor().
+/// Cursor types for `createSystemCursor`.
 pub const SystemCursor = enum(c_int) {
     default,
     text,
@@ -3011,7 +3011,7 @@ pub const MouseWheelDirection = enum(u32) {
     flipped,
 };
 
-/// A bitmask of pressed mouse buttons, as reported by SDL_GetMouseState, etc.
+/// A bitmask of pressed mouse buttons, as reported by `getMouseState`, etc.
 pub const MouseButtonFlags = packed struct(u32) {
     left: u1 = 0,
     middle: u1 = 0,
@@ -3060,14 +3060,14 @@ extern fn SDL_GetMouseFocus() ?*Window;
 /// from the last pump of the event queue.
 ///
 /// To query the platform for immediate asynchronous state, use
-/// SDL_GetGlobalMouseState.
+/// `getGlobalMouseState`.
 ///
 /// Passing non-NULL pointers to `x` or `y` will write the destination with
 /// respective x or y coordinates relative to the focused window.
 ///
 /// In Relative Mode, the SDL-cursor's position usually contradicts the
 /// platform-cursor's position as manually calculated from
-/// SDL_GetGlobalMouseState() and SDL_GetWindowPosition.
+/// `getGlobalMouseState` and `getWindowPosition`.
 pub const getMouseState = SDL_GetMouseState;
 extern fn SDL_GetMouseState(x: ?*f32, y: ?*f32) u32;
 
@@ -3076,17 +3076,17 @@ extern fn SDL_GetMouseState(x: ?*f32, y: ?*f32) u32;
 ///
 /// This function immediately queries the platform for the most recent
 /// asynchronous state, more costly than retrieving SDL's cached state in
-/// SDL_GetMouseState().
+/// `getMouseState`.
 ///
 /// Passing non-NULL pointers to `x` or `y` will write the destination with
 /// respective x or y coordinates relative to the desktop.
 ///
 /// In Relative Mode, the platform-cursor's position usually contradicts the
-/// SDL-cursor's position as manually calculated from SDL_GetMouseState() and
-/// SDL_GetWindowPosition.
+/// SDL-cursor's position as manually calculated from `getMouseState` and
+/// `getWindowPosition`.
 ///
 /// This function can be useful if you need to track the mouse outside of a
-/// specific window and SDL_CaptureMouse() doesn't fit your needs. For example,
+/// specific window and `captureMouse` doesn't fit your needs. For example,
 /// it could be useful if you need to track the mouse while dragging a window,
 /// where coordinates relative to a window might not be in sync at all times.
 pub const getGlobalMouseState = SDL_GetGlobalMouseState;
@@ -3099,7 +3099,7 @@ extern fn SDL_GetGlobalMouseState(x: ?*f32, y: ?*f32) u32;
 /// from the last pump of the event queue.
 ///
 /// To query the platform for immediate asynchronous state, use
-/// SDL_GetGlobalMouseState.
+/// `getGlobalMouseState`.
 ///
 /// Passing non-NULL pointers to `x` or `y` will write the destination with
 /// respective x or y deltas accumulated since the last call to this function
@@ -3145,9 +3145,9 @@ extern fn SDL_WarpMouseGlobal(x: f32, y: f32) bool;
 /// the window.
 ///
 /// If you'd like to keep the mouse position fixed while in relative mode you
-/// can use SDL_SetWindowMouseRect(). If you'd like the cursor to be at a
+/// can use `setWindowMouseRect`. If you'd like the cursor to be at a
 /// specific location when relative mode ends, you should use
-/// SDL_WarpMouseInWindow() before disabling relative mode.
+/// `warpMouseInWindow` before disabling relative mode.
 ///
 /// This function will flush any pending mouse motion for this window.
 pub fn setWindowRelativeMouseMode(window: ?*Window, enabled: bool) Error!void {
@@ -3173,7 +3173,7 @@ extern fn SDL_GetWindowRelativeMouseMode(window: ?*Window) bool;
 /// mouse while the user is dragging something, until the user releases a mouse
 /// button. It is not recommended that you capture the mouse for long periods
 /// of time, such as the entire time your app is running. For that, you should
-/// probably use SDL_SetWindowRelativeMouseMode() or SDL_SetWindowMouseGrab(),
+/// probably use `setWindowRelativeMouseMode` or `setWindowMouseGrab`,
 /// depending on your goals.
 ///
 /// While captured, mouse events still report coordinates relative to the
@@ -3189,7 +3189,7 @@ extern fn SDL_GetWindowRelativeMouseMode(window: ?*Window) bool;
 /// user is pressing a button; this is to try and make mouse behavior more
 /// consistent between platforms, and deal with the common case of a user
 /// dragging the mouse outside of the window. This means that if you are
-/// calling SDL_CaptureMouse() only to deal with this situation, you do not
+/// calling `captureMouse` only to deal with this situation, you do not
 /// have to (although it is safe to do so). If this causes problems for your
 /// app, you can disable auto capture by setting the
 /// `SDL_HINT_MOUSE_AUTO_CAPTURE` hint to zero.
@@ -3213,12 +3213,12 @@ extern fn SDL_CaptureMouse(enabled: bool) bool;
 ///
 /// Cursors created with this function must be freed with SDL_DestroyCursor().
 ///
-/// If you want to have a color cursor, or create your cursor from an
-/// SDL_Surface, you should use SDL_CreateColorCursor(). Alternately, you can
+/// If you want to have a color cursor, or create your cursor from a
+/// `surface`, you should use `createColorCursor`. Alternately, you can
 /// hide the cursor and draw your own as part of your game's rendering, but it
 /// will be bound to the framerate.
 ///
-/// Also, SDL_CreateSystemCursor() is available, which provides several
+/// Also, `createSystemCursor` is available, which provides several
 /// readily-available system cursors to pick from.
 pub fn createCursor(
     data: [*]const u8,
@@ -3265,7 +3265,7 @@ extern fn SDL_CreateSystemCursor(id: SystemCursor) ?*Cursor;
 ///
 /// This function sets the currently active cursor to the specified one. If the
 /// cursor is currently visible, the change will be immediately represented on
-/// the display. SDL_SetCursor(NULL) can be used to force cursor redraw, if
+/// the display. `setCursor(null)` can be used to force cursor redraw, if
 /// this is desired for any reason.
 pub fn setCursor(cursor: *Cursor) Error!void {
     if (!SDL_SetCursor(cursor)) return error.SdlError;
@@ -3275,7 +3275,7 @@ extern fn SDL_SetCursor(cursor: *Cursor) bool;
 /// Get the active cursor.
 ///
 /// This function returns a pointer to the current cursor which is owned by the
-/// library. It is not necessary to free the cursor with SDL_DestroyCursor().
+/// library. It is not necessary to free the cursor with `destroyCursor`.
 pub fn getCursor() Error!*Cursor {
     return SDL_GetCursor() orelse error.SdlError;
 }
@@ -3283,7 +3283,7 @@ extern fn SDL_GetCursor() ?*Cursor;
 
 /// Get the default cursor.
 ///
-/// You do not have to call SDL_DestroyCursor() on the return value, but it is
+/// You do not have to call `destroyCursor` on the return value, but it is
 /// safe to do so.
 pub fn getDefaultCursor() Error!*Cursor {
     return SDL_GetDefaultCursor() orelse error.SdlError;
@@ -3292,8 +3292,8 @@ extern fn SDL_GetDefaultCursor() ?*Cursor;
 
 /// Free a previously-created cursor.
 ///
-/// Use this function to free cursor resources created with SDL_CreateCursor(),
-/// SDL_CreateColorCursor() or SDL_CreateSystemCursor().
+/// Use this function to free cursor resources created with `createCursor`,
+/// `createColorCursor` or `createSystemCursor`.
 pub const destroyCursor = SDL_DestroyCursor;
 extern fn SDL_DestroyCursor(cursor: *Cursor) void;
 
