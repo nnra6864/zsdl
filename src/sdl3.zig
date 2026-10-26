@@ -702,6 +702,146 @@ pub fn posIsCentered(x: i32) bool {
     return (@as(u32, @bitCast(x)) & 0xFFFF0000) == @as(u32, pos_centered_mask);
 }
 
+/// Window flash operation.
+pub const FlashOperation = enum(c_int) {
+    /// Cancel any window flash state.
+    Cancel,
+    /// Flash the window briefly to get attention.
+    Briefly,
+    /// Flash the window until it gets focus.
+    UntilFocused,
+};
+
+pub const GLContextState = opaque {};
+/// An opaque handle to an OpenGL context.
+pub const GLContext = *GLContextState;
+
+/// Opaque type for an EGL display.
+pub const EGLDisplay = *anyopaque;
+
+/// Opaque type for an EGL config.
+pub const EGLConfig = *anyopaque;
+
+/// Opaque type for an EGL surface.
+pub const EGLSurface = *anyopaque;
+
+/// An EGL attribute, used when creating an EGL context.
+pub const EGLAttrib = isize;
+
+/// An EGL integer attribute, used when creating an EGL surface.
+pub const EGLint = c_int;
+
+/// EGL platform attribute initialization callback.
+///
+/// This is called when SDL is attempting to create an EGL context, to let the
+/// app add extra attributes to its eglGetPlatformDisplay() call.
+///
+/// The callback should return a pointer to an EGL attribute array terminated
+/// with `EGL_NONE`. If this function returns NULL, the SDL_CreateWindow
+/// process will fail gracefully.
+///
+/// The returned pointer should be allocated with SDL_malloc() and will be
+/// passed to SDL_free().
+///
+/// The arrays returned by each callback will be appended to the existing
+/// attribute arrays defined by SDL.
+pub const EGLAttribArrayCallback = *const fn (
+    userdata: ?*anyopaque,
+) callconv(.c) ?[*]EGLAttrib;
+
+/// EGL surface/context attribute initialization callback types.
+///
+/// This is called when SDL is attempting to create an EGL surface, to let the
+/// app add extra attributes to its eglCreateWindowSurface() or
+/// eglCreateContext calls.
+///
+/// For convenience, the EGLDisplay and EGLConfig to use are provided to the
+/// callback.
+///
+/// The callback should return a pointer to an EGL attribute array terminated
+/// with `EGL_NONE`. If this function returns NULL, the SDL_CreateWindow
+/// process will fail gracefully.
+///
+/// The returned pointer should be allocated with SDL_malloc() and will be
+/// passed to SDL_free().
+///
+/// The arrays returned by each callback will be appended to the existing
+/// attribute arrays defined by SDL.
+pub const EGLIntArrayCallback = *const fn (
+    userdata: ?*anyopaque,
+    display: EGLDisplay,
+    config: EGLConfig,
+) callconv(.c) ?[*]EGLint;
+
+/// An enumeration of OpenGL configuration attributes.
+///
+/// While you can set most OpenGL attributes normally, the attributes listed
+/// above must be known before SDL creates the window that will be used with
+/// the OpenGL context. These attributes are set and read with
+/// SDL_GL_SetAttribute() and SDL_GL_GetAttribute().
+///
+/// In some cases, these attributes are minimum requests; the GL does not
+/// promise to give you exactly what you asked for. It's possible to ask for a
+/// 16-bit depth buffer and get a 24-bit one instead, for example, or to ask
+/// for no stencil buffer and still have one available. Context creation should
+/// fail if the GL can't provide your requested attributes at a minimum, but
+/// you should check to see exactly what you got.
+pub const GLAttr = enum(c_int) {
+    /// the minimum number of bits for the red channel of the color buffer; defaults to 8.
+    red_size,
+    /// the minimum number of bits for the green channel of the color buffer; defaults to 8.
+    green_size,
+    /// the minimum number of bits for the blue channel of the color buffer; defaults to 8.
+    blue_size,
+    /// the minimum number of bits for the alpha channel of the color buffer; defaults to 8.
+    alpha_size,
+    /// the minimum number of bits for frame buffer size; defaults to 0.
+    buffer_size,
+    /// whether the output is single or double buffered; defaults to double buffering on.
+    double_buffer,
+    /// the minimum number of bits in the depth buffer; defaults to 16.
+    depth_size,
+    /// the minimum number of bits in the stencil buffer; defaults to 0.
+    stencil_size,
+    /// the minimum number of bits for the red channel of the accumulation buffer; defaults to 0.
+    accum_red_size,
+    /// the minimum number of bits for the green channel of the accumulation buffer; defaults to 0.
+    accum_green_size,
+    /// the minimum number of bits for the blue channel of the accumulation buffer; defaults to 0.
+    accum_blue_size,
+    /// the minimum number of bits for the alpha channel of the accumulation buffer; defaults to 0.
+    accum_alpha_size,
+    /// whether the output is stereo 3D; defaults to off.
+    stereo,
+    /// the number of buffers used for multisample anti-aliasing; defaults to 0.
+    multisample_buffers,
+    /// the number of samples used around the current pixel used for multisample anti-aliasing.
+    multisample_samples,
+    /// set to 1 to require hardware acceleration, set to 0 to force software rendering; defaults to allow either.
+    accelerated_visual,
+    /// not used (deprecated).
+    retained_backing,
+    /// OpenGL context major version.
+    context_major_version,
+    /// OpenGL context minor version.
+    context_minor_version,
+    /// some combination of 0 or more of elements of the SDL_GLContextFlag enumeration; defaults to 0.
+    context_flags,
+    /// type of GL context (Core, Compatibility, ES). See SDL_GLProfile; default value depends on platform.
+    context_profile_mask,
+    /// OpenGL context sharing; defaults to 0.
+    share_with_current_context,
+    /// requests sRGB capable visual; defaults to 0.
+    framebuffer_srgb_capable,
+    /// sets context the release behavior. See SDL_GLContextReleaseFlag; defaults to FLUSH.
+    context_release_behavior,
+    /// set context reset notification. See SDL_GLContextResetNotification; defaults to NO_NOTIFICATION.
+    context_reset_notification,
+    context_no_error,
+    float_buffers,
+    egl_platform,
+};
+
 pub fn createWindow(title: [:0]const u8, w: c_int, h: c_int, flags: Window.Flags) Error!*Window {
     assert(w > 0);
     assert(h > 0);
