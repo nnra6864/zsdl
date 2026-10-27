@@ -709,21 +709,36 @@ pub const getRGBA = pixels_h.getRGBA;
 //--------------------------------------------------------------------------------------------------
 const blendmode_h = @import("sdl3/blendmode.zig");
 pub const BlendMode = blendmode_h.BlendMode;
+pub const BlendOperation = blendmode_h.BlendOperation;
+pub const BlendFactor = blendmode_h.BlendFactor;
+pub const composeCustomBlendMode = blendmode_h.composeCustomBlendMode;
 
 //--------------------------------------------------------------------------------------------------
 // Rectangle Functions (SDL_rect.h)
 //--------------------------------------------------------------------------------------------------
 const rect_h = @import("sdl3/rect.zig");
-pub const Rect = rect_h.Rect;
-pub const hasRectIntersection = rect_h.hasRectIntersection;
-pub const getRectIntersection = rect_h.getRectIntersection;
-pub const getRectAndLineIntersection = rect_h.getRectAndLineIntersection;
-pub const FRect = rect_h.FRect;
-pub const hasRectIntersectionFloat = rect_h.hasRectIntersectionFloat;
-pub const getRectIntersectionFloat = rect_h.getRectIntersectionFloat;
-pub const getRectAndLineIntersectionFloat = rect_h.getRectAndLineIntersectionFloat;
 pub const Point = rect_h.Point;
 pub const FPoint = rect_h.FPoint;
+pub const Rect = rect_h.Rect;
+pub const FRect = rect_h.FRect;
+pub const rectToFRect = rect_h.rectToFRect;
+pub const pointInRect = rect_h.pointInRect;
+pub const rectEmpty = rect_h.rectEmpty;
+pub const rectsEqual = rect_h.rectsEqual;
+pub const hasRectIntersection = rect_h.hasRectIntersection;
+pub const getRectIntersection = rect_h.getRectIntersection;
+pub const getRectUnion = rect_h.getRectUnion;
+pub const getRectEnclosingPoints = rect_h.getRectEnclosingPoints;
+pub const getRectAndLineIntersection = rect_h.getRectAndLineIntersection;
+pub const pointInRectFloat = rect_h.pointInRectFloat;
+pub const rectEmptyFloat = rect_h.rectEmptyFloat;
+pub const rectsEqualEpsilon = rect_h.rectsEqualEpsilon;
+pub const rectsEqualFloat = rect_h.rectsEqualFloat;
+pub const hasRectIntersectionFloat = rect_h.hasRectIntersectionFloat;
+pub const getRectIntersectionFloat = rect_h.getRectIntersectionFloat;
+pub const getRectUnionFloat = rect_h.getRectUnionFloat;
+pub const getRectEnclosingPointsFloat = rect_h.getRectEnclosingPointsFloat;
+pub const getRectAndLineIntersectionFloat = rect_h.getRectAndLineIntersectionFloat;
 
 //--------------------------------------------------------------------------------------------------
 // Surface Creation and Simple Drawing (SDL_surface.h)
