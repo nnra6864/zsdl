@@ -1884,18 +1884,51 @@ pub const getPowerInfo = power_h.getPowerInfo;
 // Process Control (SDL_process.h)
 //--------------------------------------------------------------------------------------------------
 const process_h = @import("sdl3/process.zig");
+pub const Process = process_h.Process;
+pub const createProcess = process_h.createProcess;
+pub const ProcessIO = process_h.ProcessIO;
+pub const createProcessWithProperties = process_h.createProcessWithProperties;
+pub const getProcessProperties = process_h.getProcessProperties;
+pub const readProcess = process_h.readProcess;
+pub const getProcessInput = process_h.getProcessInput;
+pub const getProcessOutput = process_h.getProcessOutput;
+pub const killProcess = process_h.killProcess;
+pub const waitProcess = process_h.waitProcess;
+pub const destroyProcess = process_h.destroyProcess;
 
 //--------------------------------------------------------------------------------------------------
 // Message Boxes (SDL_messagebox.h)
 //--------------------------------------------------------------------------------------------------
 const messagebox_h = @import("sdl3/messagebox.zig");
 pub const MessageBoxFlags = messagebox_h.MessageBoxFlags;
+pub const MessageBoxButtonFlags = messagebox_h.MessageBoxButtonFlags;
+pub const MessageBoxButtonData = messagebox_h.MessageBoxButtonData;
+pub const MessageBoxColor = messagebox_h.MessageBoxColor;
+pub const MessageBoxColorType = messagebox_h.MessageBoxColorType;
+pub const MessageBoxColorScheme = messagebox_h.MessageBoxColorScheme;
+pub const MessageBoxData = messagebox_h.MessageBoxData;
+pub const showMessageBox = messagebox_h.showMessageBox;
 pub const showSimpleMessageBox = messagebox_h.showSimpleMessageBox;
 
 //--------------------------------------------------------------------------------------------------
 // File Dialogs (SDL_dialog.h)
 //--------------------------------------------------------------------------------------------------
 const dialog_h = @import("sdl3/dialog.zig");
+pub const DialogFileFilter = dialog_h.DialogFileFilter;
+pub const DialogFileCallback = dialog_h.DialogFileCallback;
+pub const showOpenFileDialog = dialog_h.showOpenFileDialog;
+pub const showSaveFileDialog = dialog_h.showSaveFileDialog;
+pub const showOpenFolderDialog = dialog_h.showOpenFolderDialog;
+pub const FileDialogType = dialog_h.FileDialogType;
+pub const showFileDialogWithProperties = dialog_h.showFileDialogWithProperties;
+pub const prop_file_dialog_filters_pointer = dialog_h.prop_file_dialog_filters_pointer;
+pub const prop_file_dialog_nfilters_number = dialog_h.prop_file_dialog_nfilters_number;
+pub const prop_file_dialog_window_pointer = dialog_h.prop_file_dialog_window_pointer;
+pub const prop_file_dialog_location_string = dialog_h.prop_file_dialog_location_string;
+pub const prop_file_dialog_many_boolean = dialog_h.prop_file_dialog_many_boolean;
+pub const prop_file_dialog_title_string = dialog_h.prop_file_dialog_title_string;
+pub const prop_file_dialog_accept_string = dialog_h.prop_file_dialog_accept_string;
+pub const prop_file_dialog_cancel_string = dialog_h.prop_file_dialog_cancel_string;
 
 //--------------------------------------------------------------------------------------------------
 // System Tray (SDL_tray.h)
