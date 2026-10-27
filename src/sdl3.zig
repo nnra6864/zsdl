@@ -2680,7 +2680,24 @@ pub const EventFilter = fn (userdata: ?*anyopaque, event: *Event) bool;
 //
 //--------------------------------------------------------------------------------------------------
 
+/// This is a unique ID for a keyboard for the time it is connected to the
+/// system, and is never reused for the lifetime of the application.
+///
+/// If the keyboard is disconnected and reconnected, it will get a new ID.
+///
+/// The value 0 is an invalid ID.
 pub const KeyboardId = enum(u32) { invalid = 0, _ };
+
+/// Return whether a keyboard is currently connected.
+pub const hasKeyboard = SDL_HasKeyboard;
+extern fn SDL_HasKeyboard() bool;
+
+pub fn getKeyboards() Error![]KeyboardId {
+    var count: c_int = undefined;
+    const keyboards = SDL_GetKeyboards(&count) orelse return makeError();
+    return keyboards[0..@intCast(count)];
+}
+extern fn SDL_GetKeyboards(count: ?*c_int) ?[*]KeyboardId;
 
 // TODO
 // - SDL_HasKeyboard
@@ -3410,9 +3427,9 @@ extern fn SDL_HasMouse() bool;
 /// You should wait for input from a device before you consider it actively in
 /// use.
 pub fn getMice() Error![]MouseId {
-    var count: c_int = 0;
-    const ptr = SDL_GetMice(&count) orelse return Error.SdlError;
-    return ptr[0..@intCast(count)];
+    var count: c_int = undefined;
+    const mice = SDL_GetMice(&count) orelse return Error.SdlError;
+    return mice[0..@intCast(count)];
 }
 extern fn SDL_GetMice(count: ?*c_int) ?[*]MouseId;
 
@@ -3509,7 +3526,7 @@ extern fn SDL_WarpMouseInWindow(window: ?*Window, x: f32, y: f32) void;
 /// Note that this function will appear to succeed, but not actually move the
 /// mouse when used over Microsoft Remote Desktop.
 pub fn warpMouseGlobal(x: f32, y: f32) Error!void {
-    if (!SDL_WarpMouseGlobal(x, y)) return error.SdlError;
+    if (!SDL_WarpMouseGlobal(x, y)) return makeError();
 }
 extern fn SDL_WarpMouseGlobal(x: f32, y: f32) bool;
 
@@ -3527,7 +3544,7 @@ extern fn SDL_WarpMouseGlobal(x: f32, y: f32) bool;
 ///
 /// This function will flush any pending mouse motion for this window.
 pub fn setWindowRelativeMouseMode(window: ?*Window, enabled: bool) Error!void {
-    if (!SDL_SetWindowRelativeMouseMode(window, enabled)) return error.SdlError;
+    if (!SDL_SetWindowRelativeMouseMode(window, enabled)) return makeError();
 }
 extern fn SDL_SetWindowRelativeMouseMode(window: ?*Window, enabled: bool) bool;
 
@@ -3570,7 +3587,7 @@ extern fn SDL_GetWindowRelativeMouseMode(window: ?*Window) bool;
 /// app, you can disable auto capture by setting the
 /// `SDL_HINT_MOUSE_AUTO_CAPTURE` hint to zero.
 pub fn captureMouse(enabled: bool) Error!void {
-    if (!SDL_CaptureMouse(enabled)) return error.SdlError;
+    if (!SDL_CaptureMouse(enabled)) return makeError();
 }
 extern fn SDL_CaptureMouse(enabled: bool) bool;
 
@@ -3604,7 +3621,7 @@ pub fn createCursor(
     hot_x: c_int,
     hot_y: c_int,
 ) Error!*Cursor {
-    return SDL_CreateCursor(data, mask, w, h, hot_x, hot_y) orelse error.SdlError;
+    return SDL_CreateCursor(data, mask, w, h, hot_x, hot_y) orelse makeError();
 }
 extern fn SDL_CreateCursor(
     data: [*]const u8,
@@ -3627,13 +3644,13 @@ extern fn SDL_CreateCursor(
 /// appropriate size and be used instead, if available. Otherwise, the closest
 /// smaller image will be upscaled and be used instead.
 pub fn createColorCursor(surface: *Surface, hot_x: c_int, hot_y: c_int) Error!*Cursor {
-    return SDL_CreateColorCursor(surface, hot_x, hot_y) orelse error.SdlError;
+    return SDL_CreateColorCursor(surface, hot_x, hot_y) orelse makeError();
 }
 extern fn SDL_CreateColorCursor(surface: *Surface, hot_x: c_int, hot_y: c_int) ?*Cursor;
 
 /// Create a system cursor.
 pub fn createSystemCursor(id: SystemCursor) Error!*Cursor {
-    return SDL_CreateSystemCursor(id) orelse error.SdlError;
+    return SDL_CreateSystemCursor(id) orelse makeError();
 }
 extern fn SDL_CreateSystemCursor(id: SystemCursor) ?*Cursor;
 
@@ -3644,7 +3661,7 @@ extern fn SDL_CreateSystemCursor(id: SystemCursor) ?*Cursor;
 /// the display. `setCursor(null)` can be used to force cursor redraw, if
 /// this is desired for any reason.
 pub fn setCursor(cursor: *Cursor) Error!void {
-    if (!SDL_SetCursor(cursor)) return error.SdlError;
+    if (!SDL_SetCursor(cursor)) return makeError();
 }
 extern fn SDL_SetCursor(cursor: *Cursor) bool;
 
@@ -3653,7 +3670,7 @@ extern fn SDL_SetCursor(cursor: *Cursor) bool;
 /// This function returns a pointer to the current cursor which is owned by the
 /// library. It is not necessary to free the cursor with `destroyCursor`.
 pub fn getCursor() Error!*Cursor {
-    return SDL_GetCursor() orelse error.SdlError;
+    return SDL_GetCursor() orelse makeError();
 }
 extern fn SDL_GetCursor() ?*Cursor;
 
@@ -3662,7 +3679,7 @@ extern fn SDL_GetCursor() ?*Cursor;
 /// You do not have to call `destroyCursor` on the return value, but it is
 /// safe to do so.
 pub fn getDefaultCursor() Error!*Cursor {
-    return SDL_GetDefaultCursor() orelse error.SdlError;
+    return SDL_GetDefaultCursor() orelse makeError();
 }
 extern fn SDL_GetDefaultCursor() ?*Cursor;
 
