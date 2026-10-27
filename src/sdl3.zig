@@ -1708,17 +1708,103 @@ pub const getCurrentDirectory = filesystem_h.getCurrentDirectory;
 // Storage Abstraction (SDL_storage.h)
 //--------------------------------------------------------------------------------------------------
 const storage_h = @import("sdl3/storage.zig");
+pub const StorageInterface = storage_h.StorageInterface;
+pub const Storage = storage_h.Storage;
+pub const openTitleStorage = storage_h.openTitleStorage;
+pub const openUserStorage = storage_h.openUserStorage;
+pub const openFileStorage = storage_h.openFileStorage;
+pub const openStorage = storage_h.openStorage;
+pub const closeStorage = storage_h.closeStorage;
+pub const storageReady = storage_h.storageReady;
+pub const getStorageFileSize = storage_h.getStorageFileSize;
+pub const readStorageFile = storage_h.readStorageFile;
+pub const writeStorageFile = storage_h.writeStorageFile;
+pub const createStorageDirectory = storage_h.createStorageDirectory;
+pub const enumerateStorageDirectory = storage_h.enumerateStorageDirectory;
+pub const removeStoragePath = storage_h.removeStoragePath;
+pub const renameStoragePath = storage_h.renameStoragePath;
+pub const copyStorageFile = storage_h.copyStorageFile;
+pub const getStoragePathInfo = storage_h.getStoragePathInfo;
+pub const getStorageSpaceRemaining = storage_h.getStorageSpaceRemaining;
+pub const globStorageDirectory = storage_h.globStorageDirectory;
 
 //--------------------------------------------------------------------------------------------------
 // I/O Streams (SDL_iostream.h)
 //--------------------------------------------------------------------------------------------------
 const iostream_h = @import("sdl3/iostream.zig");
+pub const IOStatus = iostream_h.IOStatus;
+pub const IOWhence = iostream_h.IOWhence;
+pub const IOStreamInterface = iostream_h.IOStreamInterface;
 pub const IOStream = iostream_h.IOStream;
+pub const ioFromFile = iostream_h.ioFromFile;
+pub const ioFromMem = iostream_h.ioFromMem;
+pub const ioFromConstMem = iostream_h.ioFromConstMem;
+pub const ioFromDynamicMem = iostream_h.ioFromDynamicMem;
+pub const openIO = iostream_h.openIO;
+pub const closeIO = iostream_h.closeIO;
+pub const getIOProperties = iostream_h.getIOProperties;
+pub const getIOStatus = iostream_h.getIOStatus;
+pub const getIOSize = iostream_h.getIOSize;
+pub const seekIO = iostream_h.seekIO;
+pub const tellIO = iostream_h.tellIO;
+pub const readIO = iostream_h.readIO;
+pub const writeIO = iostream_h.writeIO;
+pub const ioPrintf = iostream_h.ioPrintf;
+pub const ioVprintf = iostream_h.ioVprintf;
+pub const flushIO = iostream_h.flushIO;
+pub const loadFile_IO = iostream_h.loadFile_IO;
+pub const loadFile = iostream_h.loadFile;
+pub const saveFile_IO = iostream_h.saveFile_IO;
+pub const saveFile = iostream_h.saveFile;
+pub const readU8 = iostream_h.readU8;
+pub const readS8 = iostream_h.readS8;
+pub const readU16LE = iostream_h.readU16LE;
+pub const readS16LE = iostream_h.readS16LE;
+pub const readU16BE = iostream_h.readU16BE;
+pub const readS16BE = iostream_h.readS16BE;
+pub const readU32LE = iostream_h.readU32LE;
+pub const readS32LE = iostream_h.readS32LE;
+pub const readU32BE = iostream_h.readU32BE;
+pub const readS32BE = iostream_h.readS32BE;
+pub const readU64LE = iostream_h.readU64LE;
+pub const readS64LE = iostream_h.readS64LE;
+pub const readU64BE = iostream_h.readU64BE;
+pub const readS64BE = iostream_h.readS64BE;
+pub const writeU8 = iostream_h.writeU8;
+pub const writeS8 = iostream_h.writeS8;
+pub const writeU16LE = iostream_h.writeU16LE;
+pub const writeS16LE = iostream_h.writeS16LE;
+pub const writeU16BE = iostream_h.writeU16BE;
+pub const writeS16BE = iostream_h.writeS16BE;
+pub const writeU32LE = iostream_h.writeU32LE;
+pub const writeS32LE = iostream_h.writeS32LE;
+pub const writeU32BE = iostream_h.writeU32BE;
+pub const writeS32BE = iostream_h.writeS32BE;
+pub const writeU64LE = iostream_h.writeU64LE;
+pub const writeS64LE = iostream_h.writeS64LE;
+pub const writeU64BE = iostream_h.writeU64BE;
+pub const writeS64BE = iostream_h.writeS64BE;
 
 //--------------------------------------------------------------------------------------------------
 // Async I/O (SDL_asyncio.h)
 //--------------------------------------------------------------------------------------------------
 const asyncio_h = @import("sdl3/asyncio.zig");
+pub const AsyncIO = asyncio_h.AsyncIO;
+pub const AsyncIOTaskType = asyncio_h.AsyncIOTaskType;
+pub const AsyncIOResult = asyncio_h.AsyncIOResult;
+pub const AsyncIOOutcome = asyncio_h.AsyncIOOutcome;
+pub const AsyncIOQueue = asyncio_h.AsyncIOQueue;
+pub const asyncIOFromFile = asyncio_h.asyncIOFromFile;
+pub const getAsyncIOSize = asyncio_h.getAsyncIOSize;
+pub const readAsyncIO = asyncio_h.readAsyncIO;
+pub const writeAsyncIO = asyncio_h.writeAsyncIO;
+pub const closeAsyncIO = asyncio_h.closeAsyncIO;
+pub const createAsyncIOQueue = asyncio_h.createAsyncIOQueue;
+pub const destroyAsyncIOQueue = asyncio_h.destroyAsyncIOQueue;
+pub const getAsyncIOResult = asyncio_h.getAsyncIOResult;
+pub const waitAsyncIOResult = asyncio_h.waitAsyncIOResult;
+pub const signalAsyncIOQueue = asyncio_h.signalAsyncIOQueue;
+pub const loadFileAsync = asyncio_h.loadFileAsync;
 
 //--------------------------------------------------------------------------------------------------
 // Shared Object/DLL Management (SDL_loadso.h)
@@ -1788,11 +1874,26 @@ const system_h = @import("sdl3/system.zig");
 // Standard Library Functionality (SDL_stdinc.h)
 //--------------------------------------------------------------------------------------------------
 const stdinc_h = @import("sdl3/stdinc.zig");
-pub const malloc = stdinc_h.malloc;
-pub const free = stdinc_h.free;
 pub const Time = stdinc_h.Time;
 pub const max_time = stdinc_h.max_time;
 pub const min_time = stdinc_h.min_time;
+pub const fourcc = stdinc_h.fourcc;
+pub const malloc = stdinc_h.malloc;
+pub const calloc = stdinc_h.calloc;
+pub const realloc = stdinc_h.realloc;
+pub const free = stdinc_h.free;
+pub const MallocFn = stdinc_h.MallocFn;
+pub const CallocFn = stdinc_h.CallocFn;
+pub const ReallocFn = stdinc_h.ReallocFn;
+pub const FreeFn = stdinc_h.FreeFn;
+pub const MemoryFunctions = stdinc_h.MemoryFunctions;
+pub const getOriginalMemoryFunctions = stdinc_h.getOriginalMemoryFunctions;
+pub const getMemoryFunctions = stdinc_h.getMemoryFunctions;
+pub const setMemoryFunctions = stdinc_h.setMemoryFunctions;
+pub const alignedAlloc = stdinc_h.alignedAlloc;
+pub const alignedFree = stdinc_h.alignedFree;
+pub const getNumAllocations = stdinc_h.getNumAllocations;
+pub const allocator = stdinc_h.allocator;
 
 //--------------------------------------------------------------------------------------------------
 // GUIDs (SDL_guid.h)
