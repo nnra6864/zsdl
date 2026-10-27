@@ -671,18 +671,38 @@ pub const renderDebugTextFormat = render_h.renderDebugTextFormat;
 // Pixel Formats and Conversion Routines (SDL_pixels.h)
 //--------------------------------------------------------------------------------------------------
 const pixels_h = @import("sdl3/pixels.zig");
-pub const ALPHA_OPAQUE = pixels_h.ALPHA_OPAQUE;
-pub const ALPHA_OPAQUE_FLOAT = pixels_h.ALPHA_OPAQUE_FLOAT;
-pub const ALPHA_TRANSPARENT = pixels_h.ALPHA_TRANSPARENT;
-pub const ALPHA_TRANSPARENT_FLOAT = pixels_h.ALPHA_TRANSPARENT_FLOAT;
+pub const alpha_opaque = pixels_h.alpha_opaque;
+pub const alpha_opaque_float = pixels_h.alpha_opaque_float;
+pub const alpha_transparent = pixels_h.alpha_transparent;
+pub const alpha_transparent_float = pixels_h.alpha_transparent_float;
 pub const PixelType = pixels_h.PixelType;
 pub const BitmapOrder = pixels_h.BitmapOrder;
 pub const PackedOrder = pixels_h.PackedOrder;
 pub const ArrayOrder = pixels_h.ArrayOrder;
 pub const PackedLayout = pixels_h.PackedLayout;
 pub const PixelFormat = pixels_h.PixelFormat;
+pub const ColorType = pixels_h.ColorType;
+pub const ColorRange = pixels_h.ColorRange;
+pub const ColorPrimaries = pixels_h.ColorPrimaries;
+pub const TransferCharacteristics = pixels_h.TransferCharacteristics;
+pub const MatrixCoefficients = pixels_h.MatrixCoefficients;
+pub const ChromaLocation = pixels_h.ChromaLocation;
+pub const Colorspace = pixels_h.Colorspace;
 pub const Color = pixels_h.Color;
 pub const FColor = pixels_h.FColor;
+pub const Palette = pixels_h.Palette;
+pub const PixelFormatDetails = pixels_h.PixelFormatDetails;
+pub const getPixelFormatName = pixels_h.getPixelFormatName;
+pub const getMasksForPixelFormat = pixels_h.getMasksForPixelFormat;
+pub const getPixelFormatForMasks = pixels_h.getPixelFormatForMasks;
+pub const getPixelFormatDetails = pixels_h.getPixelFormatDetails;
+pub const createPalette = pixels_h.createPalette;
+pub const setPaletteColors = pixels_h.setPaletteColors;
+pub const destroyPalette = pixels_h.destroyPalette;
+pub const mapRGB = pixels_h.mapRGB;
+pub const mapRGBA = pixels_h.mapRGBA;
+pub const getRGB = pixels_h.getRGB;
+pub const getRGBA = pixels_h.getRGBA;
 
 //--------------------------------------------------------------------------------------------------
 // Blend modes (SDL_blendmode.h)
