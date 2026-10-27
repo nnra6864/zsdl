@@ -1549,16 +1549,92 @@ pub const gdkResumeGPU = gpu_h.gdkResumeGPU;
 // Thread Management (SDL_thread.h)
 //--------------------------------------------------------------------------------------------------
 const thread_h = @import("sdl3/thread.zig");
+pub const Thread = thread_h.Thread;
+pub const ThreadId = thread_h.ThreadId;
+pub const TLSID = thread_h.TLSID;
+pub const ThreadPriority = thread_h.ThreadPriority;
+pub const ThreadState = thread_h.ThreadState;
+pub const ThreadFunction = thread_h.ThreadFunction;
+pub const createThread = thread_h.createThread;
+pub const createThreadWithProperties = thread_h.createThreadWithProperties;
+pub const createThreadRuntime = thread_h.createThreadRuntime;
+pub const createThreadWithPropertiesRuntime = thread_h.createThreadWithPropertiesRuntime;
+pub const getThreadName = thread_h.getThreadName;
+pub const getCurrentThreadId = thread_h.getCurrentThreadId;
+pub const getThreadId = thread_h.getThreadId;
+pub const setCurrentThreadPriority = thread_h.setCurrentThreadPriority;
+pub const waitThread = thread_h.waitThread;
+pub const getThreadState = thread_h.getThreadState;
+pub const detachThread = thread_h.detachThread;
+pub const getTLS = thread_h.getTLS;
+pub const TLSDestructorCallback = thread_h.TLSDestructorCallback;
+pub const setTLS = thread_h.setTLS;
+pub const cleanupTLS = thread_h.cleanupTLS;
 
 //--------------------------------------------------------------------------------------------------
 // Thread Synchronization Primitives (SDL_mutex.h)
 //--------------------------------------------------------------------------------------------------
 const mutex_h = @import("sdl3/mutex.zig");
+pub const Mutex = mutex_h.Mutex;
+pub const createMutex = mutex_h.createMutex;
+pub const lockMutex = mutex_h.lockMutex;
+pub const tryLockMutex = mutex_h.tryLockMutex;
+pub const unlockMutex = mutex_h.unlockMutex;
+pub const destroyMutex = mutex_h.destroyMutex;
+pub const RWLock = mutex_h.RWLock;
+pub const createRWLock = mutex_h.createRWLock;
+pub const lockRWLockForReading = mutex_h.lockRWLockForReading;
+pub const lockRWLockForWriting = mutex_h.lockRWLockForWriting;
+pub const tryLockRWLockForReading = mutex_h.tryLockRWLockForReading;
+pub const tryLockRWLockForWriting = mutex_h.tryLockRWLockForWriting;
+pub const unlockRWLock = mutex_h.unlockRWLock;
+pub const destroyRWLock = mutex_h.destroyRWLock;
+pub const Semaphore = mutex_h.Semaphore;
+pub const createSemaphore = mutex_h.createSemaphore;
+pub const destroySemaphore = mutex_h.destroySemaphore;
+pub const waitSemaphore = mutex_h.waitSemaphore;
+pub const tryWaitSemaphore = mutex_h.tryWaitSemaphore;
+pub const waitSemaphoreTimeout = mutex_h.waitSemaphoreTimeout;
+pub const signalSemaphore = mutex_h.signalSemaphore;
+pub const getSemaphoreValue = mutex_h.getSemaphoreValue;
+pub const Condition = mutex_h.Condition;
+pub const createCondition = mutex_h.createCondition;
+pub const destroyCondition = mutex_h.destroyCondition;
+pub const signalCondition = mutex_h.signalCondition;
+pub const broadcastCondition = mutex_h.broadcastCondition;
+pub const waitCondition = mutex_h.waitCondition;
+pub const waitConditionTimeout = mutex_h.waitConditionTimeout;
+pub const InitStatus = mutex_h.InitStatus;
+pub const InitState = mutex_h.InitState;
+pub const shouldInit = mutex_h.shouldInit;
+pub const shouldQuit = mutex_h.shouldQuit;
+pub const setInitialized = mutex_h.setInitialized;
 
 //--------------------------------------------------------------------------------------------------
 // Atomic Operations (SDL_atomic.h)
 //--------------------------------------------------------------------------------------------------
 const atomic_h = @import("sdl3/atomic.zig");
+pub const SpinLock = atomic_h.SpinLock;
+pub const tryLockSpinlock = atomic_h.tryLockSpinlock;
+pub const lockSpinlock = atomic_h.lockSpinlock;
+pub const unlockSpinlock = atomic_h.unlockSpinlock;
+pub const cpuPauseInstruction = atomic_h.cpuPauseInstruction;
+pub const memoryBarrierReleaseFunction = atomic_h.memoryBarrierReleaseFunction;
+pub const memoryBarrierAcquireFunction = atomic_h.memoryBarrierAcquireFunction;
+pub const AtomicInt = atomic_h.AtomicInt;
+pub const compareAndSwapAtomicInt = atomic_h.compareAndSwapAtomicInt;
+pub const setAtomicInt = atomic_h.setAtomicInt;
+pub const getAtomicInt = atomic_h.getAtomicInt;
+pub const addAtomicInt = atomic_h.addAtomicInt;
+pub const atomicIncRef = atomic_h.atomicIncRef;
+pub const atomicDecRef = atomic_h.atomicDecRef;
+pub const AtomicU32 = atomic_h.AtomicU32;
+pub const compareAndSwapAtomicU32 = atomic_h.compareAndSwapAtomicU32;
+pub const setAtomicU32 = atomic_h.setAtomicU32;
+pub const getAtomicU32 = atomic_h.getAtomicU32;
+pub const compareAndSwapAtomicPointer = atomic_h.compareAndSwapAtomicPointer;
+pub const setAtomicPointer = atomic_h.setAtomicPointer;
+pub const getAtomicPointer = atomic_h.getAtomicPointer;
 
 //--------------------------------------------------------------------------------------------------
 // Timer Support (SDL_timer.h)
