@@ -1182,24 +1182,21 @@ pub const TouchId = touch_h.TouchId;
 pub const FingerId = touch_h.FingerId;
 pub const TouchDeviceType = touch_h.TouchDeviceType;
 pub const Finger = touch_h.Finger;
-pub const TOUCH_MOUSEID = touch_h.TOUCH_MOUSEID;
-pub const MOUSE_TOUCHID = touch_h.MOUSE_TOUCHID;
+pub const touch_mouseid = touch_h.touch_mouseid;
+pub const mouse_touchid = touch_h.mouse_touchid;
+pub const getTouchDevices = touch_h.getTouchDevices;
+pub const getTouchDeviceName = touch_h.getTouchDeviceName;
+pub const getTouchDeviceType = touch_h.getTouchDeviceType;
+pub const getTouchFingers = touch_h.getTouchFingers;
 
 //--------------------------------------------------------------------------------------------------
 // Pen Support (SDL_pen.h)
 //--------------------------------------------------------------------------------------------------
 const pen_h = @import("sdl3/pen.zig");
 pub const PenId = pen_h.PenId;
-pub const PEN_MOUSEID = pen_h.PEN_MOUSEID;
-pub const PEN_TOUCHID = pen_h.PEN_TOUCHID;
+pub const pen_mouseid = pen_h.pen_mouseid;
+pub const pen_touchid = pen_h.pen_touchid;
 pub const PenInputFlags = pen_h.PenInputFlags;
-pub const PEN_INPUT_DOWN = pen_h.PEN_INPUT_DOWN;
-pub const PEN_INPUT_BUTTON_1 = pen_h.PEN_INPUT_BUTTON_1;
-pub const PEN_INPUT_BUTTON_2 = pen_h.PEN_INPUT_BUTTON_2;
-pub const PEN_INPUT_BUTTON_3 = pen_h.PEN_INPUT_BUTTON_3;
-pub const PEN_INPUT_BUTTON_4 = pen_h.PEN_INPUT_BUTTON_4;
-pub const PEN_INPUT_BUTTON_5 = pen_h.PEN_INPUT_BUTTON_5;
-pub const PEN_INPUT_ERASER_TIP = pen_h.PEN_INPUT_ERASER_TIP;
 pub const PenAxis = pen_h.PenAxis;
 
 //--------------------------------------------------------------------------------------------------
