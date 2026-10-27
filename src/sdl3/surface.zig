@@ -10,6 +10,9 @@ pub const ScaleMode = enum(c_int) {
     best = 0x0002,
 };
 
+/// The flip mode.
+pub const FlipMode = Surface.FlipMode;
+
 pub const Surface = opaque {
     pub const Flags = packed struct(u32) {
         /// Surface uses preallocatred pixel memory

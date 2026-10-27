@@ -1026,7 +1026,7 @@ extern fn SDL_GetWindowICCProfile(window: *Window, size: *usize) ?*anyopaque;
 /// Get the pixel format associated with the window.
 pub fn getWindowPixelFormat(window: *Window) Error!sdl.PixelFormat {
     const format = SDL_GetWindowPixelFormat(window);
-    if (@intFromEnum(format) == 0) return makeError();
+    if (@backingInt(format) == 0) return makeError();
     return format;
 }
 extern fn SDL_GetWindowPixelFormat(window: *Window) sdl.PixelFormat;

@@ -12,6 +12,7 @@ test {
 }
 
 test "every public declaration is re-exported" {
+    @setEvalBranchQuota(100_000);
     inline for (modules) |M| {
         inline for (comptime std.meta.declarations(M)) |decl| {
             if (!@hasDecl(@This(), decl)) @compileError("missing re-export: " ++ decl);
@@ -20,6 +21,7 @@ test "every public declaration is re-exported" {
 }
 
 fn refAllDeclsRecursive(comptime T: type, comptime depth: u32) void {
+    @setEvalBranchQuota(100_000);
     inline for (comptime std.meta.declarations(T)) |decl| {
         const D = @field(T, decl);
         if (@TypeOf(D) == type) {
@@ -566,46 +568,104 @@ pub const disableScreenSaver = video_h.disableScreenSaver;
 // 2D Accelerated Rendering (SDL_render.h)
 //--------------------------------------------------------------------------------------------------
 const render_h = @import("sdl3/render.zig");
+pub const software_renderer = render_h.software_renderer;
 pub const Vertex = render_h.Vertex;
 pub const TextureAccess = render_h.TextureAccess;
-pub const RendererLogicalPresentationMode = render_h.RendererLogicalPresentationMode;
-pub const Texture = render_h.Texture;
-pub const destroyTexture = render_h.destroyTexture;
-pub const lockTexture = render_h.lockTexture;
-pub const unlockTexture = render_h.unlockTexture;
+pub const RendererLogicalPresentation = render_h.RendererLogicalPresentation;
 pub const Renderer = render_h.Renderer;
+pub const Texture = render_h.Texture;
 pub const getNumRenderDrivers = render_h.getNumRenderDrivers;
 pub const getRenderDriver = render_h.getRenderDriver;
 pub const createWindowAndRenderer = render_h.createWindowAndRenderer;
 pub const createRenderer = render_h.createRenderer;
-pub const destroyRenderer = render_h.destroyRenderer;
-pub const renderClear = render_h.renderClear;
-pub const renderPresent = render_h.renderPresent;
-pub const renderTexture = render_h.renderTexture;
-pub const renderTextureRotated = render_h.renderTextureRotated;
-pub const setRenderScale = render_h.setRenderScale;
-pub const renderLine = render_h.renderLine;
-pub const renderPoint = render_h.renderPoint;
-pub const renderFillRect = render_h.renderFillRect;
-pub const renderRect = render_h.renderRect;
-pub const renderGeometry = render_h.renderGeometry;
-pub const setRenderDrawColor = render_h.setRenderDrawColor;
-pub const getRenderDrawColor = render_h.getRenderDrawColor;
-pub const getRenderDrawBlendMode = render_h.getRenderDrawBlendMode;
-pub const setRenderDrawBlendMode = render_h.setRenderDrawBlendMode;
+pub const createRendererWithProperties = render_h.createRendererWithProperties;
+pub const createSoftwareRenderer = render_h.createSoftwareRenderer;
+pub const getRenderer = render_h.getRenderer;
+pub const getRenderWindow = render_h.getRenderWindow;
+pub const getRendererName = render_h.getRendererName;
+pub const getRendererProperties = render_h.getRendererProperties;
+pub const getRenderOutputSize = render_h.getRenderOutputSize;
 pub const getCurrentRenderOutputSize = render_h.getCurrentRenderOutputSize;
 pub const createTexture = render_h.createTexture;
 pub const createTextureFromSurface = render_h.createTextureFromSurface;
-pub const renderClipEnabled = render_h.renderClipEnabled;
+pub const createTextureWithProperties = render_h.createTextureWithProperties;
+pub const getTextureProperties = render_h.getTextureProperties;
+pub const getRendererFromTexture = render_h.getRendererFromTexture;
+pub const getTextureSize = render_h.getTextureSize;
+pub const setTextureColorMod = render_h.setTextureColorMod;
+pub const setTextureColorModFloat = render_h.setTextureColorModFloat;
+pub const getTextureColorMod = render_h.getTextureColorMod;
+pub const getTextureColorModFloat = render_h.getTextureColorModFloat;
+pub const setTextureAlphaMod = render_h.setTextureAlphaMod;
+pub const setTextureAlphaModFloat = render_h.setTextureAlphaModFloat;
+pub const getTextureAlphaMod = render_h.getTextureAlphaMod;
+pub const getTextureAlphaModFloat = render_h.getTextureAlphaModFloat;
+pub const setTextureBlendMode = render_h.setTextureBlendMode;
+pub const getTextureBlendMode = render_h.getTextureBlendMode;
+pub const setTextureScaleMode = render_h.setTextureScaleMode;
+pub const getTextureScaleMode = render_h.getTextureScaleMode;
+pub const updateTexture = render_h.updateTexture;
+pub const updateYUVTexture = render_h.updateYUVTexture;
+pub const updateNVTexture = render_h.updateNVTexture;
+pub const lockTexture = render_h.lockTexture;
+pub const lockTextureToSurface = render_h.lockTextureToSurface;
+pub const unlockTexture = render_h.unlockTexture;
+pub const setRenderTarget = render_h.setRenderTarget;
+pub const getRenderTarget = render_h.getRenderTarget;
+pub const setRenderLogicalPresentation = render_h.setRenderLogicalPresentation;
+pub const getRenderLogicalPresentation = render_h.getRenderLogicalPresentation;
+pub const getRenderLogicalPresentationRect = render_h.getRenderLogicalPresentationRect;
+pub const renderCoordinatesFromWindow = render_h.renderCoordinatesFromWindow;
+pub const renderCoordinatesToWindow = render_h.renderCoordinatesToWindow;
+pub const convertEventToRenderCoordinates = render_h.convertEventToRenderCoordinates;
+pub const setRenderViewport = render_h.setRenderViewport;
+pub const getRenderViewport = render_h.getRenderViewport;
+pub const renderViewportSet = render_h.renderViewportSet;
+pub const getRenderSafeArea = render_h.getRenderSafeArea;
 pub const setRenderClipRect = render_h.setRenderClipRect;
 pub const getRenderClipRect = render_h.getRenderClipRect;
-pub const getRenderLogicalPresentation = render_h.getRenderLogicalPresentation;
-pub const setRenderLogicalPresentation = render_h.setRenderLogicalPresentation;
-pub const getRenderViewport = render_h.getRenderViewport;
-pub const setRenderViewport = render_h.setRenderViewport;
-pub const setRenderTarget = render_h.setRenderTarget;
+pub const renderClipEnabled = render_h.renderClipEnabled;
+pub const setRenderScale = render_h.setRenderScale;
+pub const getRenderScale = render_h.getRenderScale;
+pub const setRenderDrawColor = render_h.setRenderDrawColor;
+pub const setRenderDrawColorFloat = render_h.setRenderDrawColorFloat;
+pub const getRenderDrawColor = render_h.getRenderDrawColor;
+pub const getRenderDrawColorFloat = render_h.getRenderDrawColorFloat;
+pub const setRenderColorScale = render_h.setRenderColorScale;
+pub const getRenderColorScale = render_h.getRenderColorScale;
+pub const setRenderDrawBlendMode = render_h.setRenderDrawBlendMode;
+pub const getRenderDrawBlendMode = render_h.getRenderDrawBlendMode;
+pub const renderClear = render_h.renderClear;
+pub const renderPoint = render_h.renderPoint;
+pub const renderPoints = render_h.renderPoints;
+pub const renderLine = render_h.renderLine;
+pub const renderLines = render_h.renderLines;
+pub const renderRect = render_h.renderRect;
+pub const renderRects = render_h.renderRects;
+pub const renderFillRect = render_h.renderFillRect;
+pub const renderFillRects = render_h.renderFillRects;
+pub const renderTexture = render_h.renderTexture;
+pub const renderTextureRotated = render_h.renderTextureRotated;
+pub const renderTextureAffine = render_h.renderTextureAffine;
+pub const renderTextureTiled = render_h.renderTextureTiled;
+pub const renderTexture9Grid = render_h.renderTexture9Grid;
+pub const renderGeometry = render_h.renderGeometry;
+pub const renderGeometryRaw = render_h.renderGeometryRaw;
 pub const renderReadPixels = render_h.renderReadPixels;
+pub const renderPresent = render_h.renderPresent;
+pub const destroyTexture = render_h.destroyTexture;
+pub const destroyRenderer = render_h.destroyRenderer;
+pub const flushRenderer = render_h.flushRenderer;
+pub const getRenderMetalLayer = render_h.getRenderMetalLayer;
+pub const getRenderMetalCommandEncoder = render_h.getRenderMetalCommandEncoder;
+pub const addVulkanRenderSemaphores = render_h.addVulkanRenderSemaphores;
+pub const setRenderVSync = render_h.setRenderVSync;
+pub const renderer_vsync_disabled = render_h.renderer_vsync_disabled;
+pub const renderer_vsync_adaptive = render_h.renderer_vsync_adaptive;
+pub const getRenderVSync = render_h.getRenderVSync;
+pub const debug_text_font_character_size = render_h.debug_text_font_character_size;
 pub const renderDebugText = render_h.renderDebugText;
+pub const renderDebugTextFormat = render_h.renderDebugTextFormat;
 
 //--------------------------------------------------------------------------------------------------
 // Pixel Formats and Conversion Routines (SDL_pixels.h)
@@ -650,6 +710,7 @@ pub const FPoint = rect_h.FPoint;
 //--------------------------------------------------------------------------------------------------
 const surface_h = @import("sdl3/surface.zig");
 pub const ScaleMode = surface_h.ScaleMode;
+pub const FlipMode = surface_h.FlipMode;
 pub const Surface = surface_h.Surface;
 pub const destroySurface = surface_h.destroySurface;
 
