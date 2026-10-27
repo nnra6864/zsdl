@@ -1542,6 +1542,8 @@ pub const gpuTextureFormatTexelBlockSize = gpu_h.gpuTextureFormatTexelBlockSize;
 pub const gpuTextureSupportsFormat = gpu_h.gpuTextureSupportsFormat;
 pub const gpuTextureSupportsSampleCount = gpu_h.gpuTextureSupportsSampleCount;
 pub const calculateGPUTextureFormatSize = gpu_h.calculateGPUTextureFormatSize;
+pub const gdkSuspendGPU = gpu_h.gdkSuspendGPU;
+pub const gdkResumeGPU = gpu_h.gdkResumeGPU;
 
 //--------------------------------------------------------------------------------------------------
 // Thread Management (SDL_thread.h)
