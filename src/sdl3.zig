@@ -1934,6 +1934,34 @@ pub const prop_file_dialog_cancel_string = dialog_h.prop_file_dialog_cancel_stri
 // System Tray (SDL_tray.h)
 //--------------------------------------------------------------------------------------------------
 const tray_h = @import("sdl3/tray.zig");
+pub const Tray = tray_h.Tray;
+pub const TrayMenu = tray_h.TrayMenu;
+pub const TrayEntry = tray_h.TrayEntry;
+pub const TrayEntryFlags = tray_h.TrayEntryFlags;
+pub const TrayCallback = tray_h.TrayCallback;
+pub const createTray = tray_h.createTray;
+pub const setTrayIcon = tray_h.setTrayIcon;
+pub const setTrayTooltip = tray_h.setTrayTooltip;
+pub const createTrayMenu = tray_h.createTrayMenu;
+pub const createTraySubmenu = tray_h.createTraySubmenu;
+pub const getTrayMenu = tray_h.getTrayMenu;
+pub const getTraySubmenu = tray_h.getTraySubmenu;
+pub const getTrayEntries = tray_h.getTrayEntries;
+pub const removeTrayEntry = tray_h.removeTrayEntry;
+pub const insertTrayEntryAt = tray_h.insertTrayEntryAt;
+pub const setTrayEntryLabel = tray_h.setTrayEntryLabel;
+pub const getTrayEntryLabel = tray_h.getTrayEntryLabel;
+pub const setTrayEntryChecked = tray_h.setTrayEntryChecked;
+pub const getTrayEntryChecked = tray_h.getTrayEntryChecked;
+pub const setTrayEntryEnabled = tray_h.setTrayEntryEnabled;
+pub const getTrayEntryEnabled = tray_h.getTrayEntryEnabled;
+pub const setTrayEntryCallback = tray_h.setTrayEntryCallback;
+pub const clickTrayEntry = tray_h.clickTrayEntry;
+pub const destroyTray = tray_h.destroyTray;
+pub const getTrayEntryParent = tray_h.getTrayEntryParent;
+pub const getTrayMenuParentEntry = tray_h.getTrayMenuParentEntry;
+pub const getTrayMenuParentTray = tray_h.getTrayMenuParentTray;
+pub const updateTrays = tray_h.updateTrays;
 
 //--------------------------------------------------------------------------------------------------
 // Locale Info (SDL_locale.h)
@@ -1946,6 +1974,50 @@ pub const getPreferredLocales = locale_h.getPreferredLocales;
 // Platform-specific Functionality (SDL_system.h)
 //--------------------------------------------------------------------------------------------------
 const system_h = @import("sdl3/system.zig");
+pub const MSG = system_h.MSG;
+pub const WindowsMessageHook = system_h.WindowsMessageHook;
+pub const setWindowsMessageHook = system_h.setWindowsMessageHook;
+pub const getDirect3D9AdapterIndex = system_h.getDirect3D9AdapterIndex;
+pub const getDXGIOutputInfo = system_h.getDXGIOutputInfo;
+pub const XEvent = system_h.XEvent;
+pub const X11EventHook = system_h.X11EventHook;
+pub const setX11EventHook = system_h.setX11EventHook;
+pub const setLinuxThreadPriority = system_h.setLinuxThreadPriority;
+pub const setLinuxThreadPriorityAndPolicy = system_h.setLinuxThreadPriorityAndPolicy;
+pub const IOSAnimationCallback = system_h.IOSAnimationCallback;
+pub const setiOSAnimationCallback = system_h.setiOSAnimationCallback;
+pub const setiOSEventPump = system_h.setiOSEventPump;
+pub const getAndroidJNIEnv = system_h.getAndroidJNIEnv;
+pub const getAndroidActivity = system_h.getAndroidActivity;
+pub const getAndroidSDKVersion = system_h.getAndroidSDKVersion;
+pub const isChromebook = system_h.isChromebook;
+pub const isDeXMode = system_h.isDeXMode;
+pub const sendAndroidBackButton = system_h.sendAndroidBackButton;
+pub const android_external_storage_read = system_h.android_external_storage_read;
+pub const android_external_storage_write = system_h.android_external_storage_write;
+pub const getAndroidInternalStoragePath = system_h.getAndroidInternalStoragePath;
+pub const getAndroidExternalStorageState = system_h.getAndroidExternalStorageState;
+pub const getAndroidExternalStoragePath = system_h.getAndroidExternalStoragePath;
+pub const getAndroidCachePath = system_h.getAndroidCachePath;
+pub const RequestAndroidPermissionCallback = system_h.RequestAndroidPermissionCallback;
+pub const requestAndroidPermission = system_h.requestAndroidPermission;
+pub const showAndroidToast = system_h.showAndroidToast;
+pub const sendAndroidMessage = system_h.sendAndroidMessage;
+pub const isTablet = system_h.isTablet;
+pub const isTV = system_h.isTV;
+pub const Sandbox = system_h.Sandbox;
+pub const getSandbox = system_h.getSandbox;
+pub const onApplicationWillTerminate = system_h.onApplicationWillTerminate;
+pub const onApplicationDidReceiveMemoryWarning = system_h.onApplicationDidReceiveMemoryWarning;
+pub const onApplicationWillEnterBackground = system_h.onApplicationWillEnterBackground;
+pub const onApplicationDidEnterBackground = system_h.onApplicationDidEnterBackground;
+pub const onApplicationWillEnterForeground = system_h.onApplicationWillEnterForeground;
+pub const onApplicationDidEnterForeground = system_h.onApplicationDidEnterForeground;
+pub const onApplicationDidChangeStatusBarOrientation = system_h.onApplicationDidChangeStatusBarOrientation;
+pub const XTaskQueueHandle = system_h.XTaskQueueHandle;
+pub const XUserHandle = system_h.XUserHandle;
+pub const getGDKTaskQueue = system_h.getGDKTaskQueue;
+pub const getGDKDefaultUser = system_h.getGDKDefaultUser;
 
 //--------------------------------------------------------------------------------------------------
 // Standard Library Functionality (SDL_stdinc.h)
