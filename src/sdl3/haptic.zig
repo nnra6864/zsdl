@@ -658,7 +658,7 @@ extern fn SDL_GetHapticFromID(instance_id: HapticId) ?*Haptic;
 /// Get the instance ID of an opened haptic device.
 pub fn getHapticId(haptic: *Haptic) Error!HapticId {
     const result = SDL_GetHapticID(haptic);
-    if (@intFromEnum(result) == 0) return makeError();
+    if (@backingInt(result) == 0) return makeError();
     return result;
 }
 extern fn SDL_GetHapticID(haptic: *Haptic) HapticId;
