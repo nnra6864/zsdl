@@ -1640,16 +1640,47 @@ pub const getAtomicPointer = atomic_h.getAtomicPointer;
 // Timer Support (SDL_timer.h)
 //--------------------------------------------------------------------------------------------------
 const timer_h = @import("sdl3/timer.zig");
+pub const ms_per_second = timer_h.ms_per_second;
+pub const us_per_second = timer_h.us_per_second;
+pub const ns_per_second = timer_h.ns_per_second;
+pub const ns_per_ms = timer_h.ns_per_ms;
+pub const ns_per_us = timer_h.ns_per_us;
+pub const secondsToNS = timer_h.secondsToNS;
+pub const nsToSeconds = timer_h.nsToSeconds;
+pub const msToNS = timer_h.msToNS;
+pub const nsToMS = timer_h.nsToMS;
+pub const usToNS = timer_h.usToNS;
+pub const nsToUS = timer_h.nsToUS;
+pub const getTicks = timer_h.getTicks;
 pub const getTicksNS = timer_h.getTicksNS;
 pub const getPerformanceCounter = timer_h.getPerformanceCounter;
 pub const getPerformanceFrequency = timer_h.getPerformanceFrequency;
 pub const delay = timer_h.delay;
-pub const getTicks = timer_h.getTicks;
+pub const delayNS = timer_h.delayNS;
+pub const delayPrecise = timer_h.delayPrecise;
+pub const TimerId = timer_h.TimerId;
+pub const TimerCallback = timer_h.TimerCallback;
+pub const addTimer = timer_h.addTimer;
+pub const NSTimerCallback = timer_h.NSTimerCallback;
+pub const addTimerNS = timer_h.addTimerNS;
+pub const removeTimer = timer_h.removeTimer;
 
 //--------------------------------------------------------------------------------------------------
 // Date and Time (SDL_time.h)
 //--------------------------------------------------------------------------------------------------
 const time_h = @import("sdl3/time.zig");
+pub const DateTime = time_h.DateTime;
+pub const DateFormat = time_h.DateFormat;
+pub const TimeFormat = time_h.TimeFormat;
+pub const getDateTimeLocalePreferences = time_h.getDateTimeLocalePreferences;
+pub const getCurrentTime = time_h.getCurrentTime;
+pub const timeToDateTime = time_h.timeToDateTime;
+pub const dateTimeToTime = time_h.dateTimeToTime;
+pub const timeToWindows = time_h.timeToWindows;
+pub const timeFromWindows = time_h.timeFromWindows;
+pub const getDaysInMonth = time_h.getDaysInMonth;
+pub const getDayOfYear = time_h.getDayOfYear;
+pub const getDayOfWeek = time_h.getDayOfWeek;
 
 //--------------------------------------------------------------------------------------------------
 // Filesystem Access (SDL_filesystem.h)
@@ -1657,6 +1688,21 @@ const time_h = @import("sdl3/time.zig");
 const filesystem_h = @import("sdl3/filesystem.zig");
 pub const getBasePath = filesystem_h.getBasePath;
 pub const getPrefPath = filesystem_h.getPrefPath;
+pub const Folder = filesystem_h.Folder;
+pub const getUserFolder = filesystem_h.getUserFolder;
+pub const PathType = filesystem_h.PathType;
+pub const PathInfo = filesystem_h.PathInfo;
+pub const GlobFlags = filesystem_h.GlobFlags;
+pub const createDirectory = filesystem_h.createDirectory;
+pub const EnumerationResult = filesystem_h.EnumerationResult;
+pub const EnumerateDirectoryCallback = filesystem_h.EnumerateDirectoryCallback;
+pub const enumerateDirectory = filesystem_h.enumerateDirectory;
+pub const removePath = filesystem_h.removePath;
+pub const renamePath = filesystem_h.renamePath;
+pub const copyFile = filesystem_h.copyFile;
+pub const getPathInfo = filesystem_h.getPathInfo;
+pub const globDirectory = filesystem_h.globDirectory;
+pub const getCurrentDirectory = filesystem_h.getCurrentDirectory;
 
 //--------------------------------------------------------------------------------------------------
 // Storage Abstraction (SDL_storage.h)
@@ -1744,6 +1790,9 @@ const system_h = @import("sdl3/system.zig");
 const stdinc_h = @import("sdl3/stdinc.zig");
 pub const malloc = stdinc_h.malloc;
 pub const free = stdinc_h.free;
+pub const Time = stdinc_h.Time;
+pub const max_time = stdinc_h.max_time;
+pub const min_time = stdinc_h.min_time;
 
 //--------------------------------------------------------------------------------------------------
 // GUIDs (SDL_guid.h)

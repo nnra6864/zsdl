@@ -24,3 +24,13 @@ extern fn SDL_free(*anyopaque) void;
 // TODO
 // - Declare SDL_malloc_func, SDL_calloc_func, SDL_realloc_func and SDL_free_func
 // - Zig Allocator interface
+
+/// SDL times are signed, 64-bit integers representing nanoseconds since the
+/// Unix epoch (Jan 1, 1970).
+///
+/// They can be converted between POSIX time_t values with `nsToSeconds` and
+/// `secondsToNS`, and between Windows FILETIME values with `timeToWindows`
+/// and `timeFromWindows`.
+pub const Time = i64;
+pub const max_time: Time = std.math.maxInt(i64);
+pub const min_time: Time = std.math.minInt(i64);
