@@ -1068,6 +1068,22 @@ pub const PenAxis = pen_h.PenAxis;
 const sensor_h = @import("sdl3/sensor.zig");
 pub const Sensor = sensor_h.Sensor;
 pub const SensorId = sensor_h.SensorId;
+pub const standard_gravity = sensor_h.standard_gravity;
+pub const SensorType = sensor_h.SensorType;
+pub const getSensors = sensor_h.getSensors;
+pub const getSensorNameForId = sensor_h.getSensorNameForId;
+pub const getSensorTypeForId = sensor_h.getSensorTypeForId;
+pub const getSensorNonPortableTypeForId = sensor_h.getSensorNonPortableTypeForId;
+pub const openSensor = sensor_h.openSensor;
+pub const getSensorFromId = sensor_h.getSensorFromId;
+pub const getSensorProperties = sensor_h.getSensorProperties;
+pub const getSensorName = sensor_h.getSensorName;
+pub const getSensorType = sensor_h.getSensorType;
+pub const getSensorNonPortableType = sensor_h.getSensorNonPortableType;
+pub const getSensorId = sensor_h.getSensorId;
+pub const getSensorData = sensor_h.getSensorData;
+pub const closeSensor = sensor_h.closeSensor;
+pub const updateSensors = sensor_h.updateSensors;
 
 //--------------------------------------------------------------------------------------------------
 // HIDAPI (SDL_hidapi.h)
@@ -1386,6 +1402,7 @@ const bits_h = @import("sdl3/bits.zig");
 //--------------------------------------------------------------------------------------------------
 const power_h = @import("sdl3/power.zig");
 pub const PowerState = power_h.PowerState;
+pub const getPowerInfo = power_h.getPowerInfo;
 
 //--------------------------------------------------------------------------------------------------
 // Process Control (SDL_process.h)
@@ -1430,6 +1447,9 @@ pub const free = stdinc_h.free;
 // GUIDs (SDL_guid.h)
 //--------------------------------------------------------------------------------------------------
 const guid_h = @import("sdl3/guid.zig");
+pub const GUID = guid_h.GUID;
+pub const guidToString = guid_h.guidToString;
+pub const stringToGUID = guid_h.stringToGUID;
 
 //--------------------------------------------------------------------------------------------------
 // Miscellaneous (SDL_misc.h)
