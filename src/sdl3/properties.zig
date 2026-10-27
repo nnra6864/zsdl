@@ -6,133 +6,208 @@ const sdl = @import("../sdl3.zig");
 const Error = sdl.Error;
 const makeError = sdl.makeError;
 
-pub const PropertiesID = enum(u32) { _ };
+/// SDL properties ID
+pub const PropertiesId = enum(u32) { invalid = 0, _ };
 
+/// SDL property type
 pub const PropertyType = enum(c_int) {
-    invalid = 0,
-    pointer = 1,
-    string = 2,
-    number = 3,
-    float = 4,
-    boolean = 5,
+    invalid,
+    pointer,
+    string,
+    number,
+    float,
+    boolean,
 };
 
-pub const CleanupPropertyCallback = *const fn (userdata: ?*anyopaque, value: ?*anyopaque) callconv(.c) void;
+/// Get the global SDL properties.
+pub fn getGlobalProperties() Error!PropertiesId {
+    const result = SDL_GetGlobalProperties();
+    if (@backingInt(result) == 0) return makeError();
+    return result;
+}
+extern fn SDL_GetGlobalProperties() PropertiesId;
 
-pub const EnumeratePropertiesCallback = *const fn (userdata: ?*anyopaque, props: PropertiesID, name: [*c]const u8) callconv(.c) void;
+/// Create a group of properties.
+///
+/// All properties are automatically destroyed when `quit` is called.
+pub fn createProperties() Error!PropertiesId {
+    const result = SDL_CreateProperties();
+    if (@backingInt(result) == 0) return makeError();
+    return result;
+}
+extern fn SDL_CreateProperties() PropertiesId;
 
-pub const getGlobalProperties = SDL_GetGlobalProperties;
-extern fn SDL_GetGlobalProperties() PropertiesID;
-
-pub const createProperties = SDL_CreateProperties;
-extern fn SDL_CreateProperties() PropertiesID;
-
-pub fn copyProperties(src: PropertiesID, dst: PropertiesID) Error!void {
+/// Copy a group of properties.
+///
+/// Copy all the properties from one group of properties to another, with the
+/// exception of properties requiring cleanup (set using
+/// `setPointerPropertyWithCleanup`), which will not be copied. Any
+/// property that already exists on `dst` will be overwritten.
+pub fn copyProperties(src: PropertiesId, dst: PropertiesId) Error!void {
     if (!SDL_CopyProperties(src, dst)) return makeError();
 }
-extern fn SDL_CopyProperties(src: PropertiesID, dst: PropertiesID) bool;
+extern fn SDL_CopyProperties(src: PropertiesId, dst: PropertiesId) bool;
 
-pub fn lockProperties(props: PropertiesID) Error!void {
+/// Lock a group of properties.
+///
+/// Obtain a multi-threaded lock for these properties. Other threads will wait
+/// while trying to lock these properties until they are unlocked. Properties
+/// must be unlocked before they are destroyed.
+///
+/// The lock is automatically taken when setting individual properties, this
+/// function is only needed when you want to set several properties atomically
+/// or want to guarantee that properties being queried aren't freed in another
+/// thread.
+pub fn lockProperties(props: PropertiesId) Error!void {
     if (!SDL_LockProperties(props)) return makeError();
 }
-extern fn SDL_LockProperties(props: PropertiesID) bool;
+extern fn SDL_LockProperties(props: PropertiesId) bool;
 
+/// Unlock a group of properties.
 pub const unlockProperties = SDL_UnlockProperties;
-extern fn SDL_UnlockProperties(props: PropertiesID) void;
+extern fn SDL_UnlockProperties(props: PropertiesId) void;
 
-pub fn setPointerPropertyWithCleanup(
-    props: PropertiesID,
-    name: [:0]const u8,
-    value: ?*anyopaque,
-    cleanup: ?CleanupPropertyCallback,
-    userdata: ?*anyopaque,
-) Error!void {
-    if (!SDL_SetPointerPropertyWithCleanup(props, @ptrCast(name.ptr), value, cleanup, userdata)) {
-        return makeError();
-    }
+/// A callback used to free resources when a property is deleted.
+///
+/// This should release any resources associated with `value` that are no
+/// longer needed.
+///
+/// This callback is set per-property. Different properties in the same group
+/// can have different cleanup callbacks.
+///
+/// This callback will be called _during_ `setPointerPropertyWithCleanup` if
+/// the function fails for any reason.
+pub const CleanupPropertyCallback = *const fn (userdata: ?*anyopaque, value: ?*anyopaque) callconv(.c) void;
+
+/// Set a pointer property in a group of properties with a cleanup function
+/// that is called when the property is deleted.
+///
+/// The cleanup function is also called if setting the property fails for any
+/// reason.
+///
+/// For simply setting basic data types, like numbers, bools, or strings, use
+/// `setNumberProperty`, `setBooleanProperty`, or `setStringProperty`
+/// instead, as those functions will handle cleanup on your behalf. This
+/// function is only for more complex, custom data.
+pub fn setPointerPropertyWithCleanup(props: PropertiesId, name: [:0]const u8, value: ?*anyopaque, cleanup: ?CleanupPropertyCallback, userdata: ?*anyopaque) Error!void {
+    if (!SDL_SetPointerPropertyWithCleanup(props, name.ptr, value, cleanup, userdata)) return makeError();
 }
-extern fn SDL_SetPointerPropertyWithCleanup(
-    props: PropertiesID,
-    name: [*c]const u8,
-    value: ?*anyopaque,
-    cleanup: ?CleanupPropertyCallback,
-    userdata: ?*anyopaque,
-) bool;
+extern fn SDL_SetPointerPropertyWithCleanup(props: PropertiesId, name: [*:0]const u8, value: ?*anyopaque, cleanup: ?CleanupPropertyCallback, userdata: ?*anyopaque) bool;
 
-pub fn setPointerProperty(props: PropertiesID, name: [:0]const u8, value: ?*anyopaque) Error!void {
-    if (!SDL_SetPointerProperty(props, @ptrCast(name.ptr), value)) return makeError();
+/// Set a pointer property in a group of properties.
+pub fn setPointerProperty(props: PropertiesId, name: [:0]const u8, value: ?*anyopaque) Error!void {
+    if (!SDL_SetPointerProperty(props, name.ptr, value)) return makeError();
 }
-extern fn SDL_SetPointerProperty(props: PropertiesID, name: [*c]const u8, value: ?*anyopaque) bool;
+extern fn SDL_SetPointerProperty(props: PropertiesId, name: [*:0]const u8, value: ?*anyopaque) bool;
 
-pub fn setStringProperty(props: PropertiesID, name: [:0]const u8, value: ?[:0]const u8) Error!void {
-    const val_ptr = if (value) |v| @as([*c]const u8, @ptrCast(v.ptr)) else null;
-    if (!SDL_SetStringProperty(props, @ptrCast(name.ptr), val_ptr)) return makeError();
+/// Set a string property in a group of properties.
+///
+/// This function makes a copy of the string; the caller does not have to
+/// preserve the data after this call completes.
+pub fn setStringProperty(props: PropertiesId, name: [:0]const u8, value: ?[:0]const u8) Error!void {
+    if (!SDL_SetStringProperty(props, name.ptr, if (value) |s| s.ptr else null)) return makeError();
 }
-extern fn SDL_SetStringProperty(props: PropertiesID, name: [*c]const u8, value: [*c]const u8) bool;
+extern fn SDL_SetStringProperty(props: PropertiesId, name: [*:0]const u8, value: ?[*:0]const u8) bool;
 
-pub fn setNumberProperty(props: PropertiesID, name: [:0]const u8, value: i64) Error!void {
-    if (!SDL_SetNumberProperty(props, @ptrCast(name.ptr), value)) return makeError();
+/// Set an integer property in a group of properties.
+pub fn setNumberProperty(props: PropertiesId, name: [:0]const u8, value: i64) Error!void {
+    if (!SDL_SetNumberProperty(props, name.ptr, value)) return makeError();
 }
-extern fn SDL_SetNumberProperty(props: PropertiesID, name: [*c]const u8, value: i64) bool;
+extern fn SDL_SetNumberProperty(props: PropertiesId, name: [*:0]const u8, value: i64) bool;
 
-pub fn setFloatProperty(props: PropertiesID, name: [:0]const u8, value: f32) Error!void {
-    if (!SDL_SetFloatProperty(props, @ptrCast(name.ptr), value)) return makeError();
+/// Set a floating point property in a group of properties.
+pub fn setFloatProperty(props: PropertiesId, name: [:0]const u8, value: f32) Error!void {
+    if (!SDL_SetFloatProperty(props, name.ptr, value)) return makeError();
 }
-extern fn SDL_SetFloatProperty(props: PropertiesID, name: [*c]const u8, value: f32) bool;
+extern fn SDL_SetFloatProperty(props: PropertiesId, name: [*:0]const u8, value: f32) bool;
 
-pub fn setBooleanProperty(props: PropertiesID, name: [:0]const u8, value: bool) Error!void {
-    if (!SDL_SetBooleanProperty(props, @ptrCast(name.ptr), value)) return makeError();
+/// Set a boolean property in a group of properties.
+pub fn setBooleanProperty(props: PropertiesId, name: [:0]const u8, value: bool) Error!void {
+    if (!SDL_SetBooleanProperty(props, name.ptr, value)) return makeError();
 }
-extern fn SDL_SetBooleanProperty(props: PropertiesID, name: [*c]const u8, value: bool) bool;
+extern fn SDL_SetBooleanProperty(props: PropertiesId, name: [*:0]const u8, value: bool) bool;
 
-pub fn hasProperty(props: PropertiesID, name: [:0]const u8) bool {
-    return SDL_HasProperty(props, @ptrCast(name.ptr));
+/// Return whether a property exists in a group of properties.
+pub fn hasProperty(props: PropertiesId, name: [:0]const u8) bool {
+    return SDL_HasProperty(props, name.ptr);
 }
-extern fn SDL_HasProperty(props: PropertiesID, name: [*c]const u8) bool;
+extern fn SDL_HasProperty(props: PropertiesId, name: [*:0]const u8) bool;
 
-pub fn getPropertyType(props: PropertiesID, name: [:0]const u8) PropertyType {
-    return SDL_GetPropertyType(props, @ptrCast(name.ptr));
+/// Get the type of a property in a group of properties.
+pub fn getPropertyType(props: PropertiesId, name: [:0]const u8) PropertyType {
+    return SDL_GetPropertyType(props, name.ptr);
 }
-extern fn SDL_GetPropertyType(props: PropertiesID, name: [*c]const u8) PropertyType;
+extern fn SDL_GetPropertyType(props: PropertiesId, name: [*:0]const u8) PropertyType;
 
-pub fn getPointerProperty(props: PropertiesID, name: [:0]const u8, default_value: ?*anyopaque) ?*anyopaque {
-    return SDL_GetPointerProperty(props, @ptrCast(name.ptr), default_value);
+/// Get a pointer property from a group of properties.
+///
+/// By convention, the names of properties that SDL exposes on objects will
+/// start with "SDL.", and properties that SDL uses internally will start with
+/// "SDL.internal.". These should be considered read-only and should not be
+/// modified by applications.
+pub fn getPointerProperty(props: PropertiesId, name: [:0]const u8, default_value: ?*anyopaque) ?*anyopaque {
+    return SDL_GetPointerProperty(props, name.ptr, default_value);
 }
-extern fn SDL_GetPointerProperty(props: PropertiesID, name: [*c]const u8, default_value: ?*anyopaque) ?*anyopaque;
+extern fn SDL_GetPointerProperty(props: PropertiesId, name: [*:0]const u8, default_value: ?*anyopaque) ?*anyopaque;
 
-pub fn getStringProperty(props: PropertiesID, name: [:0]const u8, default_value: ?[:0]const u8) ?[*:0]const u8 {
-    return @ptrCast(SDL_GetStringProperty(
-        props,
-        @ptrCast(name.ptr),
-        if (default_value) |default_str| @ptrCast(default_str.ptr) else null,
-    ));
+/// Get a string property from a group of properties.
+pub fn getStringProperty(props: PropertiesId, name: [:0]const u8, default_value: ?[:0]const u8) ?[:0]const u8 {
+    const str = SDL_GetStringProperty(props, name.ptr, if (default_value) |s| s.ptr else null) orelse return null;
+    return std.mem.span(str);
 }
-extern fn SDL_GetStringProperty(props: PropertiesID, name: [*c]const u8, default_value: [*c]const u8) [*c]const u8;
+extern fn SDL_GetStringProperty(props: PropertiesId, name: [*:0]const u8, default_value: ?[*:0]const u8) ?[*:0]const u8;
 
-pub fn getNumberProperty(props: PropertiesID, name: [:0]const u8, default_value: i64) i64 {
-    return SDL_GetNumberProperty(props, @ptrCast(name.ptr), default_value);
+/// Get a number property from a group of properties.
+///
+/// You can use `getPropertyType` to query whether the property exists and
+/// is a number property.
+pub fn getNumberProperty(props: PropertiesId, name: [:0]const u8, default_value: i64) i64 {
+    return SDL_GetNumberProperty(props, name.ptr, default_value);
 }
-extern fn SDL_GetNumberProperty(props: PropertiesID, name: [*c]const u8, default_value: i64) i64;
+extern fn SDL_GetNumberProperty(props: PropertiesId, name: [*:0]const u8, default_value: i64) i64;
 
-pub fn getFloatProperty(props: PropertiesID, name: [:0]const u8, default_value: f32) f32 {
-    return SDL_GetFloatProperty(props, @ptrCast(name.ptr), default_value);
+/// Get a floating point property from a group of properties.
+///
+/// You can use `getPropertyType` to query whether the property exists and
+/// is a floating point property.
+pub fn getFloatProperty(props: PropertiesId, name: [:0]const u8, default_value: f32) f32 {
+    return SDL_GetFloatProperty(props, name.ptr, default_value);
 }
-extern fn SDL_GetFloatProperty(props: PropertiesID, name: [*c]const u8, default_value: f32) f32;
+extern fn SDL_GetFloatProperty(props: PropertiesId, name: [*:0]const u8, default_value: f32) f32;
 
-pub fn getBooleanProperty(props: PropertiesID, name: [:0]const u8, default_value: bool) bool {
-    return SDL_GetBooleanProperty(props, @ptrCast(name.ptr), default_value);
+/// Get a boolean property from a group of properties.
+///
+/// You can use `getPropertyType` to query whether the property exists and
+/// is a boolean property.
+pub fn getBooleanProperty(props: PropertiesId, name: [:0]const u8, default_value: bool) bool {
+    return SDL_GetBooleanProperty(props, name.ptr, default_value);
 }
-extern fn SDL_GetBooleanProperty(props: PropertiesID, name: [*c]const u8, default_value: bool) bool;
+extern fn SDL_GetBooleanProperty(props: PropertiesId, name: [*:0]const u8, default_value: bool) bool;
 
-pub fn clearProperty(props: PropertiesID, name: [:0]const u8) Error!void {
-    if (!SDL_ClearProperty(props, @ptrCast(name.ptr))) return makeError();
+/// Clear a property from a group of properties.
+pub fn clearProperty(props: PropertiesId, name: [:0]const u8) Error!void {
+    if (!SDL_ClearProperty(props, name.ptr)) return makeError();
 }
-extern fn SDL_ClearProperty(props: PropertiesID, name: [*c]const u8) bool;
+extern fn SDL_ClearProperty(props: PropertiesId, name: [*:0]const u8) bool;
 
-pub fn enumerateProperties(props: PropertiesID, callback: EnumeratePropertiesCallback, userdata: ?*anyopaque) Error!void {
+/// A callback used to enumerate all the properties in a group of properties.
+///
+/// This callback is called from `enumerateProperties`, and is called once
+/// per property in the set.
+pub const EnumeratePropertiesCallback = *const fn (userdata: ?*anyopaque, props: PropertiesId, name: [*:0]const u8) callconv(.c) void;
+
+/// Enumerate the properties contained in a group of properties.
+///
+/// The callback function is called for each property in the group of
+/// properties. The properties are locked during enumeration.
+pub fn enumerateProperties(props: PropertiesId, callback: EnumeratePropertiesCallback, userdata: ?*anyopaque) Error!void {
     if (!SDL_EnumerateProperties(props, callback, userdata)) return makeError();
 }
-extern fn SDL_EnumerateProperties(props: PropertiesID, callback: EnumeratePropertiesCallback, userdata: ?*anyopaque) bool;
+extern fn SDL_EnumerateProperties(props: PropertiesId, callback: EnumeratePropertiesCallback, userdata: ?*anyopaque) bool;
 
+/// Destroy a group of properties.
+///
+/// All properties are deleted and their cleanup functions will be called, if
+/// any.
 pub const destroyProperties = SDL_DestroyProperties;
-extern fn SDL_DestroyProperties(props: PropertiesID) void;
+extern fn SDL_DestroyProperties(props: PropertiesId) void;

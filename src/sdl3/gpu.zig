@@ -731,7 +731,7 @@ pub const GPUSamplerCreateInfo = extern struct {
     padding2: u8 = 0,
 
     /// A properties ID for extensions. Should be 0 if no extensions are needed.
-    props: sdl.PropertiesID = @fromBackingInt(@intCast(0)),
+    props: sdl.PropertiesId = .invalid,
 };
 
 pub const GPUVertexBufferDescription = extern struct {
@@ -823,7 +823,7 @@ pub const GPUShaderCreateInfo = extern struct {
     num_uniform_buffers: u32,
 
     /// A properties ID for extensions. Should be 0 if no extensions are needed.
-    props: sdl.PropertiesID = @fromBackingInt(@intCast(0)),
+    props: sdl.PropertiesId = .invalid,
 };
 
 pub const GPUTextureCreateInfo = extern struct {
@@ -845,7 +845,7 @@ pub const GPUTextureCreateInfo = extern struct {
     sample_count: GPUSampleCount,
 
     /// A properties ID for extensions. Should be 0 if no extensions are needed.
-    props: sdl.PropertiesID = @fromBackingInt(@intCast(0)),
+    props: sdl.PropertiesId = .invalid,
 };
 
 pub const GPUBufferCreateInfo = extern struct {
@@ -855,7 +855,7 @@ pub const GPUBufferCreateInfo = extern struct {
     size: u32,
 
     /// A properties ID for extensions. Should be 0 if no extensions are needed.
-    props: sdl.PropertiesID = @fromBackingInt(@intCast(0)),
+    props: sdl.PropertiesId = .invalid,
 };
 
 pub const GPUTransferBufferCreateInfo = extern struct {
@@ -865,7 +865,7 @@ pub const GPUTransferBufferCreateInfo = extern struct {
     size: u32,
 
     /// A properties ID for extensions. Should be 0 if no extensions are needed.
-    props: sdl.PropertiesID = @fromBackingInt(@intCast(0)),
+    props: sdl.PropertiesId = .invalid,
 };
 
 pub const GPURasterizerState = extern struct {
@@ -967,7 +967,7 @@ pub const GPUGraphicsPipelineCreateInfo = extern struct {
     target_info: GPUGraphicsPipelineTargetInfo,
 
     /// A properties ID for extensions. Should be 0 if no extensions are needed.
-    props: sdl.PropertiesID = @fromBackingInt(@intCast(0)),
+    props: sdl.PropertiesId = .invalid,
 };
 
 pub const GPUComputePipelineCreateInfo = extern struct {
@@ -999,7 +999,7 @@ pub const GPUComputePipelineCreateInfo = extern struct {
     threadcount_z: u32,
 
     /// A properties ID for extensions. Should be 0 if no extensions are needed.
-    props: sdl.PropertiesID = @fromBackingInt(@intCast(0)),
+    props: sdl.PropertiesId = .invalid,
 };
 
 pub const GPUColorTargetInfo = extern struct {
@@ -1127,10 +1127,10 @@ pub fn gpuSupportsShaderFormats(format_flags: GPUShaderFormat, maybe_name: ?[:0]
 }
 extern fn SDL_GPUSupportsShaderFormats(GPUShaderFormat, [*c]const u8) bool;
 
-pub fn gpuSupportsProperties(props: sdl.PropertiesID) bool {
+pub fn gpuSupportsProperties(props: sdl.PropertiesId) bool {
     return SDL_GPUSupportsProperties(props);
 }
-extern fn SDL_GPUSupportsProperties(sdl.PropertiesID) bool;
+extern fn SDL_GPUSupportsProperties(sdl.PropertiesId) bool;
 
 pub fn createGPUDevice(format_flags: GPUShaderFormat, debug_mode: bool, maybe_name: ?[:0]const u8) Error!*GPUDevice {
     const maybe_gpu = SDL_CreateGPUDevice(
@@ -1142,11 +1142,11 @@ pub fn createGPUDevice(format_flags: GPUShaderFormat, debug_mode: bool, maybe_na
 }
 extern fn SDL_CreateGPUDevice(GPUShaderFormat, bool, [*c]const u8) ?*GPUDevice;
 
-pub fn createGPUDeviceWithProperties(props: sdl.PropertiesID) Error!*GPUDevice {
+pub fn createGPUDeviceWithProperties(props: sdl.PropertiesId) Error!*GPUDevice {
     const maybe_gpu = SDL_CreateGPUDeviceWithProperties(props);
     return if (maybe_gpu) |gpu| gpu else makeError();
 }
-extern fn SDL_CreateGPUDeviceWithProperties(sdl.PropertiesID) ?*GPUDevice;
+extern fn SDL_CreateGPUDeviceWithProperties(sdl.PropertiesId) ?*GPUDevice;
 
 pub const destroyGPUDevice = SDL_DestroyGPUDevice;
 extern fn SDL_DestroyGPUDevice(device: *GPUDevice) void;
