@@ -744,10 +744,68 @@ pub const getRectAndLineIntersectionFloat = rect_h.getRectAndLineIntersectionFlo
 // Surface Creation and Simple Drawing (SDL_surface.h)
 //--------------------------------------------------------------------------------------------------
 const surface_h = @import("sdl3/surface.zig");
+pub const SurfaceFlags = surface_h.SurfaceFlags;
 pub const ScaleMode = surface_h.ScaleMode;
 pub const FlipMode = surface_h.FlipMode;
 pub const Surface = surface_h.Surface;
+pub const createSurface = surface_h.createSurface;
+pub const createSurfaceFrom = surface_h.createSurfaceFrom;
 pub const destroySurface = surface_h.destroySurface;
+pub const getSurfaceProperties = surface_h.getSurfaceProperties;
+pub const setSurfaceColorspace = surface_h.setSurfaceColorspace;
+pub const getSurfaceColorspace = surface_h.getSurfaceColorspace;
+pub const createSurfacePalette = surface_h.createSurfacePalette;
+pub const setSurfacePalette = surface_h.setSurfacePalette;
+pub const getSurfacePalette = surface_h.getSurfacePalette;
+pub const addSurfaceAlternateImage = surface_h.addSurfaceAlternateImage;
+pub const surfaceHasAlternateImages = surface_h.surfaceHasAlternateImages;
+pub const getSurfaceImages = surface_h.getSurfaceImages;
+pub const removeSurfaceAlternateImages = surface_h.removeSurfaceAlternateImages;
+pub const lockSurface = surface_h.lockSurface;
+pub const unlockSurface = surface_h.unlockSurface;
+pub const loadBMP_IO = surface_h.loadBMP_IO;
+pub const loadBMP = surface_h.loadBMP;
+pub const saveBMP_IO = surface_h.saveBMP_IO;
+pub const saveBMP = surface_h.saveBMP;
+pub const setSurfaceRLE = surface_h.setSurfaceRLE;
+pub const surfaceHasRLE = surface_h.surfaceHasRLE;
+pub const setSurfaceColorKey = surface_h.setSurfaceColorKey;
+pub const surfaceHasColorKey = surface_h.surfaceHasColorKey;
+pub const getSurfaceColorKey = surface_h.getSurfaceColorKey;
+pub const setSurfaceColorMod = surface_h.setSurfaceColorMod;
+pub const getSurfaceColorMod = surface_h.getSurfaceColorMod;
+pub const setSurfaceAlphaMod = surface_h.setSurfaceAlphaMod;
+pub const getSurfaceAlphaMod = surface_h.getSurfaceAlphaMod;
+pub const setSurfaceBlendMode = surface_h.setSurfaceBlendMode;
+pub const getSurfaceBlendMode = surface_h.getSurfaceBlendMode;
+pub const setSurfaceClipRect = surface_h.setSurfaceClipRect;
+pub const getSurfaceClipRect = surface_h.getSurfaceClipRect;
+pub const flipSurface = surface_h.flipSurface;
+pub const duplicateSurface = surface_h.duplicateSurface;
+pub const scaleSurface = surface_h.scaleSurface;
+pub const convertSurface = surface_h.convertSurface;
+pub const convertSurfaceAndColorspace = surface_h.convertSurfaceAndColorspace;
+pub const convertPixels = surface_h.convertPixels;
+pub const convertPixelsAndColorspace = surface_h.convertPixelsAndColorspace;
+pub const premultiplyAlpha = surface_h.premultiplyAlpha;
+pub const premultiplySurfaceAlpha = surface_h.premultiplySurfaceAlpha;
+pub const clearSurface = surface_h.clearSurface;
+pub const fillSurfaceRect = surface_h.fillSurfaceRect;
+pub const fillSurfaceRects = surface_h.fillSurfaceRects;
+pub const blitSurface = surface_h.blitSurface;
+pub const blitSurfaceUnchecked = surface_h.blitSurfaceUnchecked;
+pub const blitSurfaceScaled = surface_h.blitSurfaceScaled;
+pub const blitSurfaceUncheckedScaled = surface_h.blitSurfaceUncheckedScaled;
+pub const stretchSurface = surface_h.stretchSurface;
+pub const blitSurfaceTiled = surface_h.blitSurfaceTiled;
+pub const blitSurfaceTiledWithScale = surface_h.blitSurfaceTiledWithScale;
+pub const blitSurface9Grid = surface_h.blitSurface9Grid;
+pub const mapSurfaceRGB = surface_h.mapSurfaceRGB;
+pub const mapSurfaceRGBA = surface_h.mapSurfaceRGBA;
+pub const readSurfacePixel = surface_h.readSurfacePixel;
+pub const readSurfacePixelFloat = surface_h.readSurfacePixelFloat;
+pub const writeSurfacePixel = surface_h.writeSurfacePixel;
+pub const writeSurfacePixelFloat = surface_h.writeSurfacePixelFloat;
 
 //--------------------------------------------------------------------------------------------------
 // Clipboard Handling (SDL_clipboard.h)
@@ -1214,6 +1272,7 @@ const storage_h = @import("sdl3/storage.zig");
 // I/O Streams (SDL_iostream.h)
 //--------------------------------------------------------------------------------------------------
 const iostream_h = @import("sdl3/iostream.zig");
+pub const IOStream = iostream_h.IOStream;
 
 //--------------------------------------------------------------------------------------------------
 // Async I/O (SDL_asyncio.h)

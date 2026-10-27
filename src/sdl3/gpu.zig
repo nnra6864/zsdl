@@ -1062,7 +1062,7 @@ pub const GPUBlitInfo = extern struct {
     /// The color to clear the destination region to before the blit. Ignored if load_op is not SDL_GPU_LOADOP_CLEAR.
     clear_color: sdl.FColor,
     /// The flip mode for the source region.
-    flip_mode: sdl.Surface.FlipMode,
+    flip_mode: sdl.FlipMode,
     /// The filter mode used when blitting.
     filter: GPUFilter,
     /// true cycles the destination texture if it is already bound.
