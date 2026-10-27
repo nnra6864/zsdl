@@ -844,6 +844,24 @@ pub const metal = metal_h.metal;
 const camera_h = @import("sdl3/camera.zig");
 pub const CameraId = camera_h.CameraId;
 pub const Camera = camera_h.Camera;
+pub const CameraSpec = camera_h.CameraSpec;
+pub const CameraPermissionState = camera_h.CameraPermissionState;
+pub const CameraPosition = camera_h.CameraPosition;
+pub const getNumCameraDrivers = camera_h.getNumCameraDrivers;
+pub const getCameraDriver = camera_h.getCameraDriver;
+pub const getCurrentCameraDriver = camera_h.getCurrentCameraDriver;
+pub const getCameras = camera_h.getCameras;
+pub const getCameraSupportedFormats = camera_h.getCameraSupportedFormats;
+pub const getCameraName = camera_h.getCameraName;
+pub const getCameraPosition = camera_h.getCameraPosition;
+pub const openCamera = camera_h.openCamera;
+pub const getCameraPermissionState = camera_h.getCameraPermissionState;
+pub const getCameraId = camera_h.getCameraId;
+pub const getCameraProperties = camera_h.getCameraProperties;
+pub const getCameraFormat = camera_h.getCameraFormat;
+pub const acquireCameraFrame = camera_h.acquireCameraFrame;
+pub const releaseCameraFrame = camera_h.releaseCameraFrame;
+pub const closeCamera = camera_h.closeCamera;
 
 //--------------------------------------------------------------------------------------------------
 // Event Handling (SDL_events.h)
