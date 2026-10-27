@@ -908,9 +908,25 @@ pub const UserEvent = events_h.UserEvent;
 pub const Event = events_h.Event;
 pub const pumpEvents = events_h.pumpEvents;
 pub const EventAction = events_h.EventAction;
+pub const peepEvents = events_h.peepEvents;
+pub const hasEvent = events_h.hasEvent;
+pub const hasEvents = events_h.hasEvents;
+pub const flushEvent = events_h.flushEvent;
+pub const flushEvents = events_h.flushEvents;
 pub const pollEvent = events_h.pollEvent;
+pub const waitEvent = events_h.waitEvent;
+pub const waitEventTimeout = events_h.waitEventTimeout;
 pub const pushEvent = events_h.pushEvent;
 pub const EventFilter = events_h.EventFilter;
+pub const setEventFilter = events_h.setEventFilter;
+pub const getEventFilter = events_h.getEventFilter;
+pub const addEventWatch = events_h.addEventWatch;
+pub const removeEventWatch = events_h.removeEventWatch;
+pub const filterEvents = events_h.filterEvents;
+pub const setEventEnabled = events_h.setEventEnabled;
+pub const eventEnabled = events_h.eventEnabled;
+pub const registerEvents = events_h.registerEvents;
+pub const getWindowFromEvent = events_h.getWindowFromEvent;
 
 //--------------------------------------------------------------------------------------------------
 // Keyboard Support (SDL_keyboard.h)
@@ -979,6 +995,8 @@ pub const cursorVisible = mouse_h.cursorVisible;
 //--------------------------------------------------------------------------------------------------
 const joystick_h = @import("sdl3/joystick.zig");
 pub const Joystick = joystick_h.Joystick;
+pub const JoystickId = joystick_h.JoystickId;
+pub const HatState = joystick_h.HatState;
 
 //--------------------------------------------------------------------------------------------------
 // Gamepad Support (SDL_gamepad.h)
