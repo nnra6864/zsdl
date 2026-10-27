@@ -1810,26 +1810,68 @@ pub const loadFileAsync = asyncio_h.loadFileAsync;
 // Shared Object/DLL Management (SDL_loadso.h)
 //--------------------------------------------------------------------------------------------------
 const loadso_h = @import("sdl3/loadso.zig");
+pub const SharedObject = loadso_h.SharedObject;
+pub const loadObject = loadso_h.loadObject;
+pub const loadFunction = loadso_h.loadFunction;
+pub const unloadObject = loadso_h.unloadObject;
 
 //--------------------------------------------------------------------------------------------------
 // Platform Detection (SDL_platform.h)
 //--------------------------------------------------------------------------------------------------
 const platform_h = @import("sdl3/platform.zig");
+pub const getPlatform = platform_h.getPlatform;
 
 //--------------------------------------------------------------------------------------------------
 // CPU Feature Detection (SDL_cpuinfo.h)
 //--------------------------------------------------------------------------------------------------
 const cpuinfo_h = @import("sdl3/cpuinfo.zig");
+pub const cacheline_size = cpuinfo_h.cacheline_size;
+pub const getNumLogicalCPUCores = cpuinfo_h.getNumLogicalCPUCores;
+pub const getCPUCacheLineSize = cpuinfo_h.getCPUCacheLineSize;
+pub const hasAltiVec = cpuinfo_h.hasAltiVec;
+pub const hasMMX = cpuinfo_h.hasMMX;
+pub const hasSSE = cpuinfo_h.hasSSE;
+pub const hasSSE2 = cpuinfo_h.hasSSE2;
+pub const hasSSE3 = cpuinfo_h.hasSSE3;
+pub const hasSSE41 = cpuinfo_h.hasSSE41;
+pub const hasSSE42 = cpuinfo_h.hasSSE42;
+pub const hasAVX = cpuinfo_h.hasAVX;
+pub const hasAVX2 = cpuinfo_h.hasAVX2;
+pub const hasAVX512F = cpuinfo_h.hasAVX512F;
+pub const hasARMSIMD = cpuinfo_h.hasARMSIMD;
+pub const hasNEON = cpuinfo_h.hasNEON;
+pub const hasLSX = cpuinfo_h.hasLSX;
+pub const hasLASX = cpuinfo_h.hasLASX;
+pub const getSystemRAM = cpuinfo_h.getSystemRAM;
+pub const getSIMDAlignment = cpuinfo_h.getSIMDAlignment;
 
 //--------------------------------------------------------------------------------------------------
 // Byte Order and Byte Swapping (SDL_endian.h)
 //--------------------------------------------------------------------------------------------------
 const endian_h = @import("sdl3/endian.zig");
+pub const lil_endian = endian_h.lil_endian;
+pub const big_endian = endian_h.big_endian;
+pub const byteorder = endian_h.byteorder;
+pub const floatwordorder = endian_h.floatwordorder;
+pub const swap16 = endian_h.swap16;
+pub const swap32 = endian_h.swap32;
+pub const swap64 = endian_h.swap64;
+pub const swapFloat = endian_h.swapFloat;
+pub const swap16LE = endian_h.swap16LE;
+pub const swap32LE = endian_h.swap32LE;
+pub const swap64LE = endian_h.swap64LE;
+pub const swapFloatLE = endian_h.swapFloatLE;
+pub const swap16BE = endian_h.swap16BE;
+pub const swap32BE = endian_h.swap32BE;
+pub const swap64BE = endian_h.swap64BE;
+pub const swapFloatBE = endian_h.swapFloatBE;
 
 //--------------------------------------------------------------------------------------------------
 // Bit Manipulation (SDL_bits.h)
 //--------------------------------------------------------------------------------------------------
 const bits_h = @import("sdl3/bits.zig");
+pub const mostSignificantBitIndex32 = bits_h.mostSignificantBitIndex32;
+pub const hasExactlyOneBitSet32 = bits_h.hasExactlyOneBitSet32;
 
 //--------------------------------------------------------------------------------------------------
 // Power Management Status (SDL_power.h)
@@ -1864,6 +1906,8 @@ const tray_h = @import("sdl3/tray.zig");
 // Locale Info (SDL_locale.h)
 //--------------------------------------------------------------------------------------------------
 const locale_h = @import("sdl3/locale.zig");
+pub const Locale = locale_h.Locale;
+pub const getPreferredLocales = locale_h.getPreferredLocales;
 
 //--------------------------------------------------------------------------------------------------
 // Platform-specific Functionality (SDL_system.h)
@@ -1907,6 +1951,7 @@ pub const stringToGUID = guid_h.stringToGUID;
 // Miscellaneous (SDL_misc.h)
 //--------------------------------------------------------------------------------------------------
 const misc_h = @import("sdl3/misc.zig");
+pub const openURL = misc_h.openURL;
 
 const modules = .{
     main_h,
