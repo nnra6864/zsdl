@@ -399,12 +399,6 @@ pub fn ioPrintf(context: *IOStream, comptime fmt: []const u8, args: anytype) Err
     return written;
 }
 
-/// Print to an `IOStream` data stream.
-///
-/// This function does formatted printing to the stream.
-pub const ioVprintf = SDL_IOvprintf;
-extern fn SDL_IOvprintf(context: *IOStream, fmt: [*:0]const u8, ap: std.builtin.VaList) usize;
-
 /// Flush any buffered data in the stream.
 ///
 /// This function makes sure that any buffered data is written to the stream.

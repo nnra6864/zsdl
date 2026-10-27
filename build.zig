@@ -103,6 +103,8 @@ fn link_SDL2_libs_testing(compile_step: *std.Build.Step.Compile) void {
 }
 
 fn link_SDL3_libs_testing(compile_step: *std.Build.Step.Compile) void {
+    // SDL is a C library, the tests call into it so libc has to be initialized.
+    compile_step.root_module.link_libc = true;
     switch (compile_step.rootModuleTarget().os.tag) {
         .windows => {
             compile_step.root_module.linkSystemLibrary("SDL3", .{});

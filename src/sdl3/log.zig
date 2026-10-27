@@ -163,10 +163,6 @@ pub fn logMessage(category: LogCategory, priority: LogPriority, comptime fmt: []
 }
 extern fn SDL_LogMessage(category: LogCategory, priority: LogPriority, fmt: [*:0]const u8, ...) void;
 
-/// Log a message with the specified category and priority.
-pub const logMessageV = SDL_LogMessageV;
-extern fn SDL_LogMessageV(category: LogCategory, priority: LogPriority, fmt: [*:0]const u8, ap: std.builtin.VaList) void;
-
 /// The prototype for the log output callback function.
 ///
 /// This function is called by SDL when there is new text to be logged. A mutex

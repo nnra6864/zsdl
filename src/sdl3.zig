@@ -20,9 +20,46 @@ test "every public declaration is re-exported" {
     }
 }
 
+/// Functions that are only exported by SDL builds for their own platform (newer
+/// SDL versions export stubs on every platform, older ones don't) or that are
+/// newer than SDL 3.2.0. Tests skip them unless targeting that platform, so they
+/// can link against any SDL 3.2 build.
+fn mayBeMissingFromSdl(comptime name: []const u8) bool {
+    @setEvalBranchQuota(10_000_000);
+    const os = @import("builtin").os.tag;
+    const abi = @import("builtin").abi;
+    const groups = .{
+        .{ abi.isAndroid(), .{
+            "getAndroidJNIEnv",              "getAndroidActivity",             "getAndroidSDKVersion",
+            "isChromebook",                  "isDeXMode",                      "sendAndroidBackButton",
+            "getAndroidInternalStoragePath", "getAndroidExternalStorageState", "getAndroidExternalStoragePath",
+            "getAndroidCachePath",           "requestAndroidPermission",       "showAndroidToast",
+            "sendAndroidMessage",
+        } },
+        .{ os == .windows, .{
+            "setWindowsMessageHook", "getDirect3D9AdapterIndex", "getDXGIOutputInfo",
+            "registerApp",           "unregisterApp",            "getGDKTaskQueue",
+            "getGDKDefaultUser",     "gdkSuspendGPU",            "gdkResumeGPU",
+            "gdkSuspend",            "gdkResume",
+        } },
+        .{ os == .ios or os == .tvos or os == .visionos, .{
+            "setiOSAnimationCallback", "setiOSEventPump", "onApplicationDidChangeStatusBarOrientation",
+        } },
+        // Documented as available since SDL 3.4.0
+        .{ false, .{ "stretchSurface", "stretch" } },
+    };
+    inline for (groups) |group| {
+        if (!group[0]) inline for (group[1]) |n| {
+            if (comptime std.mem.eql(u8, n, name)) return true;
+        };
+    }
+    return false;
+}
+
 fn refAllDeclsRecursive(comptime T: type, comptime depth: u32) void {
-    @setEvalBranchQuota(100_000);
+    @setEvalBranchQuota(10_000_000);
     inline for (comptime std.meta.declarations(T)) |decl| {
+        if (comptime mayBeMissingFromSdl(decl)) continue;
         const D = @field(T, decl);
         if (@TypeOf(D) == type) {
             if (depth > 0) switch (@typeInfo(D)) {
@@ -376,7 +413,6 @@ pub const destroyProperties = properties_h.destroyProperties;
 //--------------------------------------------------------------------------------------------------
 const error_h = @import("sdl3/error.zig");
 pub const setError = error_h.setError;
-pub const setErrorV = error_h.setErrorV;
 pub const outOfMemory = error_h.outOfMemory;
 pub const getError = error_h.getError;
 pub const clearError = error_h.clearError;
@@ -402,7 +438,6 @@ pub const logWarn = log_h.logWarn;
 pub const logError = log_h.logError;
 pub const logCritical = log_h.logCritical;
 pub const logMessage = log_h.logMessage;
-pub const logMessageV = log_h.logMessageV;
 pub const LogOutputFunction = log_h.LogOutputFunction;
 pub const getDefaultLogOutputFunction = log_h.getDefaultLogOutputFunction;
 pub const getLogOutputFunction = log_h.getLogOutputFunction;
@@ -1750,7 +1785,6 @@ pub const tellIO = iostream_h.tellIO;
 pub const readIO = iostream_h.readIO;
 pub const writeIO = iostream_h.writeIO;
 pub const ioPrintf = iostream_h.ioPrintf;
-pub const ioVprintf = iostream_h.ioVprintf;
 pub const flushIO = iostream_h.flushIO;
 pub const loadFile_IO = iostream_h.loadFile_IO;
 pub const loadFile = iostream_h.loadFile;

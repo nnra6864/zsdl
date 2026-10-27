@@ -31,12 +31,6 @@ pub fn setError(comptime fmt: []const u8, args: anytype) Error {
 }
 extern fn SDL_SetError(fmt: [*:0]const u8, ...) bool;
 
-/// Set the SDL error message for the current thread.
-///
-/// Calling this function will replace any previous error message that was set.
-pub const setErrorV = SDL_SetErrorV;
-extern fn SDL_SetErrorV(fmt: [*:0]const u8, ap: std.builtin.VaList) bool;
-
 /// Set an error indicating that memory allocation failed.
 ///
 /// This function does not do any memory allocation.
