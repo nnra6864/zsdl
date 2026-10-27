@@ -1,16 +1,41 @@
 //! SDL3 bindings for Zig
 //! Ordered by category as per https://wiki.libsdl.org/SDL3/APIByCategory
+//!
+//! Each SDL header lives in its own file under `src/sdl3/` (e.g. `SDL_video.h` -> `src/sdl3/video.zig`),
+//! with declarations in the same order as in the header. Everything is re-exported from here,
+//! so the public API is flat: `sdl.createWindow`, `sdl.Window`, ...
 
 const std = @import("std");
-const assert = std.debug.assert;
-const builtin = @import("builtin");
 
 test {
-    _ = std.testing.refAllDecls(@This());
+    refAllDeclsRecursive(@This(), 4);
+}
+
+test "every public declaration is re-exported" {
+    inline for (modules) |M| {
+        inline for (comptime std.meta.declarations(M)) |decl| {
+            if (!@hasDecl(@This(), decl)) @compileError("missing re-export: " ++ decl);
+        }
+    }
+}
+
+fn refAllDeclsRecursive(comptime T: type, comptime depth: u32) void {
+    inline for (comptime std.meta.declarations(T)) |decl| {
+        const D = @field(T, decl);
+        if (@TypeOf(D) == type) {
+            if (depth > 0) switch (@typeInfo(D)) {
+                .@"struct", .@"enum", .@"union", .@"opaque" => refAllDeclsRecursive(D, depth - 1),
+                else => {},
+            };
+        } else {
+            _ = &@field(T, decl);
+        }
+    }
 }
 
 pub const Error = error{SdlError};
 
+/// Logs the current SDL error (see `getError`) and returns `error.SdlError`.
 pub fn makeError() error{SdlError} {
     if (getError()) |str| {
         logError(.@"error", "{s}", .{str});
@@ -18,6443 +43,848 @@ pub fn makeError() error{SdlError} {
     return error.SdlError;
 }
 
+// @generated-exports
+// Everything below is re-exported from src/sdl3/*.zig, in header declaration order.
+
 //--------------------------------------------------------------------------------------------------
-//
 // Application entry points (SDL_main.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const AppResult = enum(c_int) {
-    @"continue" = 0,
-    success = 1,
-    failure = 2,
-};
-
-pub const AppInitFn = fn (?*?*anyopaque, c_int, [*c][*c]const u8) callconv(.c) AppResult;
-pub const AppIterateFn = fn (?*anyopaque) callconv(.c) AppResult;
-pub const AppEventFn = fn (?*anyopaque, *Event) callconv(.c) AppResult;
-pub const AppQuitFn = fn (?*anyopaque, AppResult) callconv(.c) void;
-
-pub const enterAppMainCallbacks = SDL_EnterAppMainCallbacks;
-extern fn SDL_EnterAppMainCallbacks(
-    argc: c_int,
-    argv: [*c][*c]u8,
-    appinit: ?*const AppInitFn,
-    appiter: ?*const AppIterateFn,
-    appevent: ?*const AppEventFn,
-    appquit: ?*const AppQuitFn,
-) c_int;
-
-pub const setMainReady = SDL_SetMainReady;
-extern fn SDL_SetMainReady() void;
+const main_h = @import("sdl3/main.zig");
+pub const AppResult = main_h.AppResult;
+pub const AppInitFn = main_h.AppInitFn;
+pub const AppIterateFn = main_h.AppIterateFn;
+pub const AppEventFn = main_h.AppEventFn;
+pub const AppQuitFn = main_h.AppQuitFn;
+pub const enterAppMainCallbacks = main_h.enterAppMainCallbacks;
+pub const setMainReady = main_h.setMainReady;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Initialization and Shutdown (SDL_init.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const InitFlags = packed struct(u32) {
-    __unused0: bool = false,
-    __unused1: bool = false,
-    __unused2: bool = false,
-    __unused3: bool = false,
-    audio: bool = false,
-    video: bool = false,
-    __unused6: bool = false,
-    __unused7: bool = false,
-    __unused8: bool = false,
-    joystick: bool = false,
-    __unused10: bool = false,
-    __unused11: bool = false,
-    haptic: bool = false,
-    gamepad: bool = false,
-    events: bool = false,
-    sensor: bool = false,
-    camera: bool = false,
-    __unused17: u15 = 0,
-
-    pub const everything: InitFlags = .{
-        .audio = true,
-        .video = true,
-        .events = true,
-        .joystick = true,
-        .haptic = true,
-        .gamepad = true,
-        .sensor = true,
-        .camera = true,
-    };
-};
-
-pub fn init(flags: InitFlags) Error!void {
-    if (!SDL_Init(flags)) return makeError();
-}
-extern fn SDL_Init(flags: InitFlags) bool;
-
-pub const quit = SDL_Quit;
-extern fn SDL_Quit() void;
+const init_h = @import("sdl3/init.zig");
+pub const InitFlags = init_h.InitFlags;
+pub const init = init_h.init;
+pub const quit = init_h.quit;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Configuration Variables (SDL_hints.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const hint_windows_dpi_awareness = "SDL_WINDOWS_DPI_AWARENESS";
-
-pub fn setHint(name: [:0]const u8, value: [:0]const u8) bool {
-    return SDL_SetHint(@ptrCast(name.ptr), @ptrCast(value.ptr));
-}
-extern fn SDL_SetHint(name: [*c]const u8, value: [*c]const u8) bool;
-
-pub fn setAppMetadata(name: [:0]const u8, version: [:0]const u8, identifier: [:0]const u8) Error!void {
-    if (!SDL_SetAppMetadata(@ptrCast(name.ptr), @ptrCast(version.ptr), @ptrCast(identifier.ptr))) {
-        return makeError();
-    }
-}
-extern fn SDL_SetAppMetadata(appname: [*c]const u8, appversion: [*c]const u8, appidentifier: [*c]const u8) bool;
+const hints_h = @import("sdl3/hints.zig");
+pub const hint_windows_dpi_awareness = hints_h.hint_windows_dpi_awareness;
+pub const setHint = hints_h.setHint;
+pub const setAppMetadata = hints_h.setAppMetadata;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Object Properties (SDL_properties.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const PropertiesID = enum(u32) { _ };
-
-pub const PropertyType = enum(c_int) {
-    invalid = 0,
-    pointer = 1,
-    string = 2,
-    number = 3,
-    float = 4,
-    boolean = 5,
-};
-
-pub const CleanupPropertyCallback = *const fn (userdata: ?*anyopaque, value: ?*anyopaque) callconv(.c) void;
-
-pub const EnumeratePropertiesCallback = *const fn (userdata: ?*anyopaque, props: PropertiesID, name: [*c]const u8) callconv(.c) void;
-
-pub const getGlobalProperties = SDL_GetGlobalProperties;
-extern fn SDL_GetGlobalProperties() PropertiesID;
-
-pub const createProperties = SDL_CreateProperties;
-extern fn SDL_CreateProperties() PropertiesID;
-
-pub fn copyProperties(src: PropertiesID, dst: PropertiesID) Error!void {
-    if (!SDL_CopyProperties(src, dst)) return makeError();
-}
-extern fn SDL_CopyProperties(src: PropertiesID, dst: PropertiesID) bool;
-
-pub fn lockProperties(props: PropertiesID) Error!void {
-    if (!SDL_LockProperties(props)) return makeError();
-}
-extern fn SDL_LockProperties(props: PropertiesID) bool;
-
-pub const unlockProperties = SDL_UnlockProperties;
-extern fn SDL_UnlockProperties(props: PropertiesID) void;
-
-pub fn setPointerPropertyWithCleanup(
-    props: PropertiesID,
-    name: [:0]const u8,
-    value: ?*anyopaque,
-    cleanup: ?CleanupPropertyCallback,
-    userdata: ?*anyopaque,
-) Error!void {
-    if (!SDL_SetPointerPropertyWithCleanup(props, @ptrCast(name.ptr), value, cleanup, userdata)) {
-        return makeError();
-    }
-}
-extern fn SDL_SetPointerPropertyWithCleanup(
-    props: PropertiesID,
-    name: [*c]const u8,
-    value: ?*anyopaque,
-    cleanup: ?CleanupPropertyCallback,
-    userdata: ?*anyopaque,
-) bool;
-
-pub fn setPointerProperty(props: PropertiesID, name: [:0]const u8, value: ?*anyopaque) Error!void {
-    if (!SDL_SetPointerProperty(props, @ptrCast(name.ptr), value)) return makeError();
-}
-extern fn SDL_SetPointerProperty(props: PropertiesID, name: [*c]const u8, value: ?*anyopaque) bool;
-
-pub fn setStringProperty(props: PropertiesID, name: [:0]const u8, value: ?[:0]const u8) Error!void {
-    const val_ptr = if (value) |v| @as([*c]const u8, @ptrCast(v.ptr)) else null;
-    if (!SDL_SetStringProperty(props, @ptrCast(name.ptr), val_ptr)) return makeError();
-}
-extern fn SDL_SetStringProperty(props: PropertiesID, name: [*c]const u8, value: [*c]const u8) bool;
-
-pub fn setNumberProperty(props: PropertiesID, name: [:0]const u8, value: i64) Error!void {
-    if (!SDL_SetNumberProperty(props, @ptrCast(name.ptr), value)) return makeError();
-}
-extern fn SDL_SetNumberProperty(props: PropertiesID, name: [*c]const u8, value: i64) bool;
-
-pub fn setFloatProperty(props: PropertiesID, name: [:0]const u8, value: f32) Error!void {
-    if (!SDL_SetFloatProperty(props, @ptrCast(name.ptr), value)) return makeError();
-}
-extern fn SDL_SetFloatProperty(props: PropertiesID, name: [*c]const u8, value: f32) bool;
-
-pub fn setBooleanProperty(props: PropertiesID, name: [:0]const u8, value: bool) Error!void {
-    if (!SDL_SetBooleanProperty(props, @ptrCast(name.ptr), value)) return makeError();
-}
-extern fn SDL_SetBooleanProperty(props: PropertiesID, name: [*c]const u8, value: bool) bool;
-
-pub fn hasProperty(props: PropertiesID, name: [:0]const u8) bool {
-    return SDL_HasProperty(props, @ptrCast(name.ptr));
-}
-extern fn SDL_HasProperty(props: PropertiesID, name: [*c]const u8) bool;
-
-pub fn getPropertyType(props: PropertiesID, name: [:0]const u8) PropertyType {
-    return SDL_GetPropertyType(props, @ptrCast(name.ptr));
-}
-extern fn SDL_GetPropertyType(props: PropertiesID, name: [*c]const u8) PropertyType;
-
-pub fn getPointerProperty(props: PropertiesID, name: [:0]const u8, default_value: ?*anyopaque) ?*anyopaque {
-    return SDL_GetPointerProperty(props, @ptrCast(name.ptr), default_value);
-}
-extern fn SDL_GetPointerProperty(props: PropertiesID, name: [*c]const u8, default_value: ?*anyopaque) ?*anyopaque;
-
-pub fn getStringProperty(props: PropertiesID, name: [:0]const u8, default_value: ?[:0]const u8) ?[*:0]const u8 {
-    return @ptrCast(SDL_GetStringProperty(
-        props,
-        @ptrCast(name.ptr),
-        if (default_value) |default_str| @ptrCast(default_str.ptr) else null,
-    ));
-}
-extern fn SDL_GetStringProperty(props: PropertiesID, name: [*c]const u8, default_value: [*c]const u8) [*c]const u8;
-
-pub fn getNumberProperty(props: PropertiesID, name: [:0]const u8, default_value: i64) i64 {
-    return SDL_GetNumberProperty(props, @ptrCast(name.ptr), default_value);
-}
-extern fn SDL_GetNumberProperty(props: PropertiesID, name: [*c]const u8, default_value: i64) i64;
-
-pub fn getFloatProperty(props: PropertiesID, name: [:0]const u8, default_value: f32) f32 {
-    return SDL_GetFloatProperty(props, @ptrCast(name.ptr), default_value);
-}
-extern fn SDL_GetFloatProperty(props: PropertiesID, name: [*c]const u8, default_value: f32) f32;
-
-pub fn getBooleanProperty(props: PropertiesID, name: [:0]const u8, default_value: bool) bool {
-    return SDL_GetBooleanProperty(props, @ptrCast(name.ptr), default_value);
-}
-extern fn SDL_GetBooleanProperty(props: PropertiesID, name: [*c]const u8, default_value: bool) bool;
-
-pub fn clearProperty(props: PropertiesID, name: [:0]const u8) Error!void {
-    if (!SDL_ClearProperty(props, @ptrCast(name.ptr))) return makeError();
-}
-extern fn SDL_ClearProperty(props: PropertiesID, name: [*c]const u8) bool;
-
-pub fn enumerateProperties(props: PropertiesID, callback: EnumeratePropertiesCallback, userdata: ?*anyopaque) Error!void {
-    if (!SDL_EnumerateProperties(props, callback, userdata)) return makeError();
-}
-extern fn SDL_EnumerateProperties(props: PropertiesID, callback: EnumeratePropertiesCallback, userdata: ?*anyopaque) bool;
-
-pub const destroyProperties = SDL_DestroyProperties;
-extern fn SDL_DestroyProperties(props: PropertiesID) void;
+const properties_h = @import("sdl3/properties.zig");
+pub const PropertiesID = properties_h.PropertiesID;
+pub const PropertyType = properties_h.PropertyType;
+pub const CleanupPropertyCallback = properties_h.CleanupPropertyCallback;
+pub const EnumeratePropertiesCallback = properties_h.EnumeratePropertiesCallback;
+pub const getGlobalProperties = properties_h.getGlobalProperties;
+pub const createProperties = properties_h.createProperties;
+pub const copyProperties = properties_h.copyProperties;
+pub const lockProperties = properties_h.lockProperties;
+pub const unlockProperties = properties_h.unlockProperties;
+pub const setPointerPropertyWithCleanup = properties_h.setPointerPropertyWithCleanup;
+pub const setPointerProperty = properties_h.setPointerProperty;
+pub const setStringProperty = properties_h.setStringProperty;
+pub const setNumberProperty = properties_h.setNumberProperty;
+pub const setFloatProperty = properties_h.setFloatProperty;
+pub const setBooleanProperty = properties_h.setBooleanProperty;
+pub const hasProperty = properties_h.hasProperty;
+pub const getPropertyType = properties_h.getPropertyType;
+pub const getPointerProperty = properties_h.getPointerProperty;
+pub const getStringProperty = properties_h.getStringProperty;
+pub const getNumberProperty = properties_h.getNumberProperty;
+pub const getFloatProperty = properties_h.getFloatProperty;
+pub const getBooleanProperty = properties_h.getBooleanProperty;
+pub const clearProperty = properties_h.clearProperty;
+pub const enumerateProperties = properties_h.enumerateProperties;
+pub const destroyProperties = properties_h.destroyProperties;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Error Handling (SDL_error.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub fn getError() ?[:0]const u8 {
-    if (SDL_GetError()) |err_str| {
-        return std.mem.span(err_str);
-    }
-    return null;
-}
-extern fn SDL_GetError() [*c]const u8;
+const error_h = @import("sdl3/error.zig");
+pub const getError = error_h.getError;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Log Handling (SDL_log.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const max_log_message = 4096;
-
-/// The predefined log categories
-///
-/// By default the application and gpu categories are enabled at the INFO
-/// level, the assert category is enabled at the WARN level, test is enabled at
-/// the VERBOSE level and all other categories are enabled at the ERROR level.
-pub const LogCategory = enum(c_int) {
-    application = 0,
-    @"error",
-    assert,
-    system,
-    audio,
-    video,
-    render,
-    input,
-    @"test",
-    gpu,
-    reserved2,
-    reserved3,
-    reserved4,
-    reserved5,
-    reserved6,
-    reserved7,
-    reserved8,
-    reserved9,
-    reserved10,
-    custom,
-    _,
-};
-
-/// The predefined log priorities
-pub const LogPriority = enum(c_int) {
-    invalid = 0,
-    trace,
-    verbose,
-    debug,
-    info,
-    warn,
-    @"error",
-    critical,
-};
-
-/// Set the priority of all log categories.
-pub fn setLogPriorities(priority: LogPriority) void {
-    SDL_SetLogPriorities(priority);
-}
-extern fn SDL_SetLogPriorities(priority: LogPriority) void;
-
-/// Set the priority of a particular log category.
-pub fn setLogPriority(category: LogCategory, priority: LogPriority) void {
-    SDL_SetLogPriority(@backingInt(category), priority);
-}
-extern fn SDL_SetLogPriority(category: c_int, priority: LogPriority) void;
-
-/// Get the priority of a particular log category.
-pub fn getLogPriority(category: LogCategory) LogPriority {
-    return SDL_GetLogPriority(@backingInt(category));
-}
-extern fn SDL_GetLogPriority(category: c_int) LogPriority;
-
-/// Reset all priorities to default.
-///
-/// This is called by quit().
-pub const resetLogPriorities = SDL_ResetLogPriorities;
-extern fn SDL_ResetLogPriorities() void;
-
-/// Set the text prepended to log messages of a given priority.
-///
-/// By default INFO and below have no prefix, and WARN and higher have a prefix
-/// showing their priority, e.g. "WARNING: ".
-pub fn setLogPriorityPrefix(priority: LogPriority, prefix: ?[:0]const u8) Error!void {
-    if (!SDL_SetLogPriorityPrefix(
-        priority,
-        if (prefix) |p| @ptrCast(p.ptr) else null,
-    )) {
-        return makeError();
-    }
-}
-extern fn SDL_SetLogPriorityPrefix(priority: LogPriority, prefix: [*c]const u8) bool;
-
-/// Log a message with SDL_LOG_CATEGORY_APPLICATION and SDL_LOG_PRIORITY_INFO.
-pub fn log(comptime fmt: []const u8, args: anytype) void {
-    assert(fmt.len > 0 and fmt.len < max_log_message - 1);
-    var buf: [max_log_message]u8 = undefined;
-    const message = std.fmt.bufPrintSentinel(&buf, fmt, args, 0) catch |err| switch (err) {
-        std.fmt.BufPrintError.NoSpaceLeft => {
-            SDL_LogError(
-                @backingInt(LogCategory.assert),
-                "(log message exceeded %d characters)",
-                @as(u32, max_log_message),
-            );
-            return;
-        },
-    };
-    SDL_Log(@ptrCast(message.ptr));
-}
-extern fn SDL_Log(fmt: [*c]const u8, ...) void;
-
-/// Log a message with SDL_LOG_PRIORITY_TRACE.
-pub fn logTrace(category: LogCategory, comptime fmt: []const u8, args: anytype) void {
-    assert(fmt.len > 0 and fmt.len < max_log_message - 1);
-    var buf: [max_log_message]u8 = undefined;
-    const message = std.fmt.bufPrintSentinel(&buf, fmt, args, 0) catch |err| switch (err) {
-        std.fmt.BufPrintError.NoSpaceLeft => {
-            SDL_LogError(
-                @backingInt(LogCategory.assert),
-                "(log message exceeded %d characters)",
-                @as(u32, max_log_message),
-            );
-            return;
-        },
-    };
-    SDL_LogTrace(@backingInt(category), @ptrCast(message.ptr));
-}
-extern fn SDL_LogTrace(category: c_int, fmt: [*c]const u8, ...) void;
-
-/// Log a message with SDL_LOG_PRIORITY_VERBOSE.
-pub fn logVerbose(category: LogCategory, comptime fmt: []const u8, args: anytype) void {
-    assert(fmt.len > 0 and fmt.len < max_log_message - 1);
-    var buf: [max_log_message]u8 = undefined;
-    const message = std.fmt.bufPrintSentinel(&buf, fmt, args, 0) catch |err| switch (err) {
-        std.fmt.BufPrintError.NoSpaceLeft => {
-            SDL_LogError(
-                @backingInt(LogCategory.assert),
-                "(log message exceeded %d characters)",
-                @as(u32, max_log_message),
-            );
-            return;
-        },
-    };
-    SDL_LogVerbose(@backingInt(category), @ptrCast(message.ptr));
-}
-extern fn SDL_LogVerbose(category: c_int, fmt: [*c]const u8, ...) void;
-
-/// Log a message with SDL_LOG_PRIORITY_DEBUG.
-pub fn logDebug(category: LogCategory, comptime fmt: []const u8, args: anytype) void {
-    assert(fmt.len > 0 and fmt.len < max_log_message - 1);
-    var buf: [max_log_message]u8 = undefined;
-    const message = std.fmt.bufPrintSentinel(&buf, fmt, args, 0) catch |err| switch (err) {
-        std.fmt.BufPrintError.NoSpaceLeft => {
-            SDL_LogError(
-                @backingInt(LogCategory.assert),
-                "(log message exceeded %d characters)",
-                @as(u32, max_log_message),
-            );
-            return;
-        },
-    };
-    SDL_LogDebug(@backingInt(category), @ptrCast(message.ptr));
-}
-extern fn SDL_LogDebug(category: c_int, fmt: [*c]const u8, ...) void;
-
-/// Log a message with SDL_LOG_PRIORITY_INFO.
-pub fn logInfo(category: LogCategory, comptime fmt: []const u8, args: anytype) void {
-    assert(fmt.len > 0 and fmt.len < max_log_message - 1);
-    var buf: [max_log_message]u8 = undefined;
-    const message = std.fmt.bufPrintSentinel(&buf, fmt, args, 0) catch |err| switch (err) {
-        std.fmt.BufPrintError.NoSpaceLeft => {
-            SDL_LogError(
-                @backingInt(LogCategory.assert),
-                "(log message exceeded %d characters)",
-                @as(u32, max_log_message),
-            );
-            return;
-        },
-    };
-    SDL_LogInfo(@backingInt(category), @ptrCast(message.ptr));
-}
-extern fn SDL_LogInfo(category: c_int, fmt: [*c]const u8, ...) void;
-
-/// Log a message with SDL_LOG_PRIORITY_WARN.
-pub fn logWarn(category: LogCategory, comptime fmt: []const u8, args: anytype) void {
-    assert(fmt.len > 0 and fmt.len < max_log_message - 1);
-    var buf: [max_log_message]u8 = undefined;
-    const message = std.fmt.bufPrintSentinel(&buf, fmt, args, 0) catch |err| switch (err) {
-        std.fmt.BufPrintError.NoSpaceLeft => {
-            SDL_LogError(
-                @backingInt(LogCategory.assert),
-                "(log message exceeded %d characters)",
-                @as(u32, max_log_message),
-            );
-            return;
-        },
-    };
-    SDL_LogWarn(@backingInt(category), @ptrCast(message.ptr));
-}
-extern fn SDL_LogWarn(category: c_int, fmt: [*c]const u8, ...) void;
-
-/// Log a message with SDL_LOG_PRIORITY_ERROR.
-pub fn logError(category: LogCategory, comptime fmt: []const u8, args: anytype) void {
-    assert(fmt.len > 0 and fmt.len < max_log_message - 1);
-    var buf: [max_log_message]u8 = undefined;
-    const message = std.fmt.bufPrintSentinel(&buf, fmt, args, 0) catch |err| switch (err) {
-        std.fmt.BufPrintError.NoSpaceLeft => {
-            SDL_LogError(
-                @backingInt(LogCategory.assert),
-                "(log message exceeded %d characters)",
-                @as(u32, max_log_message),
-            );
-            return;
-        },
-    };
-    SDL_LogError(@backingInt(category), @ptrCast(message.ptr));
-}
-extern fn SDL_LogError(category: c_int, fmt: [*c]const u8, ...) void;
-
-/// Log a message with SDL_LOG_PRIORITY_CRITICAL.
-pub fn logCritical(category: LogCategory, comptime fmt: []const u8, args: anytype) void {
-    assert(fmt.len > 0 and fmt.len < max_log_message - 1);
-    var buf: [max_log_message]u8 = undefined;
-    const message = std.fmt.bufPrintSentinel(&buf, fmt, args, 0) catch |err| switch (err) {
-        std.fmt.BufPrintError.NoSpaceLeft => {
-            SDL_LogError(
-                @backingInt(LogCategory.assert),
-                "(log message exceeded %d characters)",
-                @as(u32, max_log_message),
-            );
-            return;
-        },
-    };
-    SDL_LogCritical(@backingInt(category), @ptrCast(message.ptr));
-}
-extern fn SDL_LogCritical(category: c_int, fmt: [*c]const u8, ...) void;
-
-/// Log a message with the specified category and priority.
-pub fn logMessage(category: LogCategory, priority: LogPriority, comptime fmt: []const u8, args: anytype) void {
-    assert(fmt.len > 0 and fmt.len < max_log_message - 1);
-    var buf: [max_log_message]u8 = undefined;
-    const message = std.fmt.bufPrintSentinel(&buf, fmt, args, 0) catch |err| switch (err) {
-        std.fmt.BufPrintError.NoSpaceLeft => {
-            SDL_LogError(
-                @backingInt(LogCategory.assert),
-                "(log message exceeded %d characters)",
-                @as(u32, max_log_message),
-            );
-            return;
-        },
-    };
-    SDL_LogMessage(@backingInt(category), priority, @ptrCast(message.ptr));
-}
-extern fn SDL_LogMessage(category: c_int, priority: LogPriority, fmt: [*c]const u8, ...) void;
-
-/// The prototype for the log output callback function.
-///
-/// This function is called by SDL when there is new text to be logged. A mutex
-/// is held so that this function is never called by more than one thread at
-/// once.
-pub const LogOutputFunction = *const fn (
-    userdata: ?*anyopaque,
-    category: c_int,
-    priority: LogPriority,
-    message: [*c]const u8,
-) callconv(.c) void;
-
-/// Get the default log output function.
-pub const getDefaultLogOutputFunction = SDL_GetDefaultLogOutputFunction;
-extern fn SDL_GetDefaultLogOutputFunction() LogOutputFunction;
-
-/// Get the current log output function.
-pub fn getLogOutputFunction(callback: *LogOutputFunction, userdata: *?*anyopaque) void {
-    SDL_GetLogOutputFunction(callback, userdata);
-}
-extern fn SDL_GetLogOutputFunction(callback: *LogOutputFunction, userdata: *?*anyopaque) void;
-
-/// Replace the default log output function with one of your own.
-pub fn setLogOutputFunction(callback: LogOutputFunction, userdata: ?*anyopaque) void {
-    SDL_SetLogOutputFunction(callback, userdata);
-}
-extern fn SDL_SetLogOutputFunction(callback: LogOutputFunction, userdata: ?*anyopaque) void;
+const log_h = @import("sdl3/log.zig");
+pub const max_log_message = log_h.max_log_message;
+pub const LogCategory = log_h.LogCategory;
+pub const LogPriority = log_h.LogPriority;
+pub const setLogPriorities = log_h.setLogPriorities;
+pub const setLogPriority = log_h.setLogPriority;
+pub const getLogPriority = log_h.getLogPriority;
+pub const resetLogPriorities = log_h.resetLogPriorities;
+pub const setLogPriorityPrefix = log_h.setLogPriorityPrefix;
+pub const log = log_h.log;
+pub const logTrace = log_h.logTrace;
+pub const logVerbose = log_h.logVerbose;
+pub const logDebug = log_h.logDebug;
+pub const logInfo = log_h.logInfo;
+pub const logWarn = log_h.logWarn;
+pub const logError = log_h.logError;
+pub const logCritical = log_h.logCritical;
+pub const logMessage = log_h.logMessage;
+pub const LogOutputFunction = log_h.LogOutputFunction;
+pub const getDefaultLogOutputFunction = log_h.getDefaultLogOutputFunction;
+pub const getLogOutputFunction = log_h.getLogOutputFunction;
+pub const setLogOutputFunction = log_h.setLogOutputFunction;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Assertions (SDL_assert.h)
-//
 //--------------------------------------------------------------------------------------------------
-// TODO
+const assert_h = @import("sdl3/assert.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Querying SDL Version (SDL_version.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const Version = extern struct {
-    major: u8,
-    minor: u8,
-    patch: u8,
-};
-
-/// Returns the linked SDL version
-pub fn getVersion() Version {
-    var version: Version = undefined;
-    SDL_GetVersion(&version);
-
-    return version;
-}
-extern fn SDL_GetVersion(version: *Version) void;
+const version_h = @import("sdl3/version.zig");
+pub const Version = version_h.Version;
+pub const getVersion = version_h.getVersion;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Display and Window Management (SDL_video.h)
-//
 //--------------------------------------------------------------------------------------------------
-
-/// This is a unique ID for a display for the time it is connected to the
-/// system, and is never reused for the lifetime of the application.
-///
-/// If the display is disconnected and reconnected, it will get a new ID.
-///
-/// The value 0 is an invalid ID.
-pub const DisplayId = enum(u32) { invalid = 0, _ };
-
-/// This is a unique ID for a window.
-///
-/// The value 0 is an invalid ID.
-pub const WindowId = enum(u32) { invalid = 0, _ };
-
-/// System theme.
-pub const SystemTheme = enum(c_int) {
-    unknown,
-    light,
-    dark,
-};
-
-/// The structure that defines a display mode.
-pub const DisplayMode = extern struct {
-    displayId: DisplayId,
-    format: PixelFormatEnum,
-    w: c_int,
-    h: c_int,
-    pixel_density: f32,
-    refresh_rate: f32,
-    refresh_rate_numerator: c_int,
-    refresh_rate_denominator: c_int,
-    internal: ?*anyopaque,
-};
-
-/// Display orientation values; the way a display is rotated.
-pub const DisplayOrientation = enum(c_int) {
-    unknown,
-    landscape,
-    landscape_flipped,
-    portrait,
-    portrait_flipped,
-};
-
-/// The struct used as an opaque handle to a window.
-pub const Window = opaque {
-    pub const Flags = packed struct(u64) {
-        fullscreen: bool = false,
-        opengl: bool = false,
-        occluded: bool = false,
-        hidden: bool = false,
-        borderless: bool = false, // 0x10
-        resizable: bool = false,
-        minimized: bool = false,
-        maximized: bool = false,
-        mouse_grabbed: bool = false, // 0x100
-        input_focus: bool = false,
-        mouse_focus: bool = false,
-        external: bool = false,
-        modal: bool = false, // 0x1000
-        high_pixel_density: bool = false,
-        mouse_capture: bool = false,
-        mouse_relative_mode: bool = false,
-        always_on_top: bool = false, // 0x10000
-        utility: bool = false,
-        tooltip: bool = false,
-        popup_menu: bool = false,
-        keyboard_grabbed: bool = false,
-        __unused21: u7 = 0,
-        vulkan: bool = false, // 0x10000000
-        metal: bool = false,
-        transparent: bool = false,
-        not_focusable: bool = false,
-        __unused32: u32 = 0,
-    };
-
-    pub const pos_undefined = posUndefinedDisplay(0);
-    pub const pos_centered = posCenteredDisplay(0);
-
-    pub const create = createWindow;
-    pub const destroy = destroyWindow;
-    pub const getFullscreenMode = getWindowFullscreenMode;
-    pub const getPosition = getWindowPosition;
-    pub const getSize = getWindowSize;
-    pub const setTitle = setWindowTitle;
-};
-
-/// A magic value used with `pos_undefined`.
-///
-/// Generally this value isn't used directly, but rather through
-/// `pos_undefined` or `posUndefinedDisplay`.
-const pos_undefined_mask: i32 = 0x1fff_0000;
-
-/// Used to indicate that you don't care what the window position is.
-///
-/// If you _really_ don't care, `pos_undefined` is the same, but always
-/// uses the primary display instead of specifying one.
-pub fn posUndefinedDisplay(x: i32) i32 {
-    return pos_undefined_mask | x;
-}
-
-/// Used to indicate that you don't care what the window position/display is.
-///
-/// This always uses the primary display.
-pub const pos_undefined: i32 = posUndefinedDisplay(0);
-
-/// A macro to test if the window position is marked as "undefined."
-pub fn posIsUndefined(x: i32) bool {
-    return (@as(u32, @bitCast(x)) & 0xFFFF0000) == @as(u32, pos_undefined_mask);
-}
-
-/// A magic value used with `pos_centered`.
-///
-/// Generally this value isn't used directly, but rather through
-/// `pos_centered` or `posCenteredDisplay`.
-const pos_centered_mask: i32 = 0x2fff_0000;
-
-/// Used to indicate that the window position should be centered.
-///
-/// `pos_centered` is the same, but always uses the primary display
-/// instead of specifying one.
-pub fn posCenteredDisplay(x: i32) i32 {
-    return pos_centered_mask | x;
-}
-
-/// Used to indicate that the window position should be centered.
-///
-/// This always uses the primary display.
-pub const pos_centered: i32 = posCenteredDisplay(0);
-
-/// A macro to test if the window position is marked as "centered."
-pub fn posIsCentered(x: i32) bool {
-    return (@as(u32, @bitCast(x)) & 0xFFFF0000) == @as(u32, pos_centered_mask);
-}
-
-/// Window flash operation.
-pub const FlashOperation = enum(c_int) {
-    /// Cancel any window flash state.
-    Cancel,
-    /// Flash the window briefly to get attention.
-    Briefly,
-    /// Flash the window until it gets focus.
-    UntilFocused,
-};
-
-pub const GLContextState = opaque {};
-/// An opaque handle to an OpenGL context.
-pub const GLContext = *GLContextState;
-
-/// Opaque type for an EGL display.
-pub const EGLDisplay = *anyopaque;
-
-/// Opaque type for an EGL config.
-pub const EGLConfig = *anyopaque;
-
-/// Opaque type for an EGL surface.
-pub const EGLSurface = *anyopaque;
-
-/// An EGL attribute, used when creating an EGL context.
-pub const EGLAttrib = isize;
-
-/// An EGL integer attribute, used when creating an EGL surface.
-pub const EGLint = c_int;
-
-/// EGL platform attribute initialization callback.
-///
-/// This is called when SDL is attempting to create an EGL context, to let the
-/// app add extra attributes to its eglGetPlatformDisplay() call.
-///
-/// The callback should return a pointer to an EGL attribute array terminated
-/// with `EGL_NONE`. If this function returns NULL, the SDL_CreateWindow
-/// process will fail gracefully.
-///
-/// The returned pointer should be allocated with SDL_malloc() and will be
-/// passed to SDL_free().
-///
-/// The arrays returned by each callback will be appended to the existing
-/// attribute arrays defined by SDL.
-pub const EGLAttribArrayCallback = *const fn (
-    userdata: ?*anyopaque,
-) callconv(.c) ?[*]EGLAttrib;
-
-/// EGL surface/context attribute initialization callback types.
-///
-/// This is called when SDL is attempting to create an EGL surface, to let the
-/// app add extra attributes to its eglCreateWindowSurface() or
-/// eglCreateContext calls.
-///
-/// For convenience, the EGLDisplay and EGLConfig to use are provided to the
-/// callback.
-///
-/// The callback should return a pointer to an EGL attribute array terminated
-/// with `EGL_NONE`. If this function returns NULL, the SDL_CreateWindow
-/// process will fail gracefully.
-///
-/// The returned pointer should be allocated with SDL_malloc() and will be
-/// passed to SDL_free().
-///
-/// The arrays returned by each callback will be appended to the existing
-/// attribute arrays defined by SDL.
-pub const EGLIntArrayCallback = *const fn (
-    userdata: ?*anyopaque,
-    display: EGLDisplay,
-    config: EGLConfig,
-) callconv(.c) ?[*]EGLint;
-
-pub const gl = struct {
-    pub const Context = *anyopaque;
-
-    pub const FunctionPointer = ?*const anyopaque;
-
-    /// An enumeration of OpenGL configuration attributes.
-    ///
-    /// While you can set most OpenGL attributes normally, the attributes listed
-    /// above must be known before SDL creates the window that will be used with
-    /// the OpenGL context. These attributes are set and read with
-    /// `setAttribute` and `getAttribute`.
-    ///
-    /// In some cases, these attributes are minimum requests; the GL does not
-    /// promise to give you exactly what you asked for. It's possible to ask for a
-    /// 16-bit depth buffer and get a 24-bit one instead, for example, or to ask
-    /// for no stencil buffer and still have one available. Context creation should
-    /// fail if the GL can't provide your requested attributes at a minimum, but
-    /// you should check to see exactly what you got.
-    pub const Attr = enum(i32) {
-        /// the minimum number of bits for the red channel of the color buffer; defaults to 8.
-        red_size,
-        /// the minimum number of bits for the green channel of the color buffer; defaults to 8.
-        green_size,
-        /// the minimum number of bits for the blue channel of the color buffer; defaults to 8.
-        blue_size,
-        /// the minimum number of bits for the alpha channel of the color buffer; defaults to 8.
-        alpha_size,
-        /// the minimum number of bits for frame buffer size; defaults to 0.
-        buffer_size,
-        /// whether the output is single or double buffered; defaults to double buffering on.
-        doublebuffer,
-        /// the minimum number of bits in the depth buffer; defaults to 16.
-        depth_size,
-        /// the minimum number of bits in the stencil buffer; defaults to 0.
-        stencil_size,
-        /// the minimum number of bits for the red channel of the accumulation buffer; defaults to 0.
-        accum_red_size,
-        /// the minimum number of bits for the green channel of the accumulation buffer; defaults to 0.
-        accum_green_size,
-        /// the minimum number of bits for the blue channel of the accumulation buffer; defaults to 0.
-        accum_blue_size,
-        /// the minimum number of bits for the alpha channel of the accumulation buffer; defaults to 0.
-        accum_alpha_size,
-        /// whether the output is stereo 3D; defaults to off.
-        stereo,
-        /// the number of buffers used for multisample anti-aliasing; defaults to 0.
-        multisamplebuffers,
-        /// the number of samples used around the current pixel used for multisample anti-aliasing.
-        multisamplesamples,
-        /// set to 1 to require hardware acceleration, set to 0 to force software rendering; defaults to allow either.
-        accelerated_visual,
-        /// not used (deprecated).
-        retained_backing,
-        /// OpenGL context major version.
-        context_major_version,
-        /// OpenGL context minor version.
-        context_minor_version,
-        /// some combination of 0 or more of elements of the `ContextFlags` enumeration; defaults to 0.
-        context_flags,
-        /// type of GL context (Core, Compatibility, ES). See `Profile`; default value depends on platform.
-        context_profile_mask,
-        /// OpenGL context sharing; defaults to 0.
-        share_with_current_context,
-        /// requests sRGB capable visual; defaults to 0.
-        framebuffer_srgb_capable,
-        /// sets context the release behavior. See `ContextReleaseFlag`; defaults to `flush`.
-        context_release_behavior,
-        /// set context reset notification. See `ContextResetNotification`; defaults to `no_notification`.
-        context_reset_notification,
-        context_no_error,
-        floatbuffers,
-        egl_platform,
-    };
-
-    /// Possible values to be set for the ContextProfileMask attribute.
-    pub const Profile = enum(c_int) {
-        core = 0x0001,
-        compatibility = 0x0002,
-        es = 0x0004,
-    };
-
-    /// Possible flags to be set for the ContextFlags attribute.
-    pub const ContextFlags = packed struct(i32) {
-        debug: bool = false,
-        forward_compatible: bool = false,
-        robust_access: bool = false,
-        reset_isolation: bool = false,
-        __unused: i28 = 0,
-    };
-
-    /// Possible values to be set for the ContextReleaseBehavior
-    /// attribute.
-    pub const ContextReleaseFlags = packed struct(i32) {
-        flush: bool = false,
-        __unused: i31 = 0,
-    };
-
-    /// Possible values to be set ContextResetNotification attribute.
-    pub const ContextResetNotification = enum(c_int) {
-        no_notification = 0x0000,
-        lose_context = 0x0001,
-    };
-
-    /// Set an OpenGL window attribute before window creation.
-    ///
-    /// This function sets the OpenGL attribute `attr` to `value`. The requested
-    /// attributes should be set before creating an OpenGL window. You should use
-    /// `getAttribute` to check the values after creating the OpenGL
-    /// context, since the values obtained can differ from the requested ones.
-    pub fn setAttribute(attr: Attr, value: i32) Error!void {
-        if (!SDL_GL_SetAttribute(attr, value)) return makeError();
-    }
-    extern fn SDL_GL_SetAttribute(attr: Attr, value: c_int) bool;
-
-    /// Get the actual value for an attribute from the current context.
-    pub fn getAttribute(attr: Attr) Error!i32 {
-        var value: i32 = undefined;
-        if (!SDL_GL_GetAttribute(attr, &value)) return makeError();
-        return value;
-    }
-    extern fn SDL_GL_GetAttribute(attr: Attr, value: *c_int) bool;
-
-    /// Set the swap interval for the current OpenGL context.
-    ///
-    /// Some systems allow specifying -1 for the interval, to enable adaptive
-    /// vsync. Adaptive vsync works the same as vsync, but if you've already missed
-    /// the vertical retrace for a given frame, it swaps buffers immediately, which
-    /// might be less jarring for the user during occasional framerate drops. If an
-    /// application requests adaptive vsync and the system does not support it,
-    /// this function will fail and return false. In such a case, you should
-    /// probably retry the call with 1 for the interval.
-    ///
-    /// Adaptive vsync is implemented for some glX drivers with
-    /// GLX_EXT_swap_control_tear, and for some Windows drivers with
-    /// WGL_EXT_swap_control_tear.
-    ///
-    /// Read more on the Khronos wiki:
-    /// https://www.khronos.org/opengl/wiki/Swap_Interval#Adaptive_Vsync
-    pub fn setSwapInterval(interval: i32) Error!void {
-        if (!SDL_GL_SetSwapInterval(interval)) return makeError();
-    }
-    extern fn SDL_GL_SetSwapInterval(interval: c_int) bool;
-
-    /// Get the swap interval for the current OpenGL context.
-    ///
-    /// If the system can't determine the swap interval, or there isn't a valid
-    /// current context, this function will set *interval to 0 as a safe default.
-    pub fn getSwapInterval() Error!i32 {
-        var interval: c_int = undefined;
-        if (!SDL_GL_GetSwapInterval(&interval)) return makeError();
-        return @intCast(interval);
-    }
-    extern fn SDL_GL_GetSwapInterval(interval: *c_int) bool;
-
-    /// Update a window with OpenGL rendering.
-    ///
-    /// This is used with double-buffered OpenGL contexts, which are the default.
-    ///
-    /// On macOS, make sure you bind 0 to the draw framebuffer before swapping the
-    /// window, otherwise nothing will happen. If you aren't using
-    /// `glBindFramebuffer`, this is the default and you won't have to do anything
-    /// extra.
-    pub fn swapWindow(window: *Window) Error!void {
-        if (!SDL_GL_SwapWindow(window)) return makeError();
-    }
-    extern fn SDL_GL_SwapWindow(window: *Window) bool;
-
-    /// Get an OpenGL function by name.
-    ///
-    /// If the GL library is loaded at runtime with `loadLibrary`, then all
-    /// GL functions must be retrieved this way. Usually this is used to retrieve
-    /// function pointers to OpenGL extensions.
-    ///
-    /// There are some quirks to looking up OpenGL functions that require some
-    /// extra care from the application. If you code carefully, you can handle
-    /// these quirks without any platform-specific code, though:
-    ///
-    /// - On Windows, function pointers are specific to the current GL context;
-    ///   this means you need to have created a GL context and made it current
-    ///   before calling `getProcAddress`. If you recreate your context or
-    ///   create a second context, you should assume that any existing function
-    ///   pointers aren't valid to use with it. This is (currently) a
-    ///   Windows-specific limitation, and in practice lots of drivers don't suffer
-    ///   this limitation, but it is still the way the wgl API is documented to
-    ///   work and you should expect crashes if you don't respect it. Store a copy
-    ///   of the function pointers that comes and goes with context lifespan.
-    /// - On X11, function pointers returned by this function are valid for any
-    ///   context, and can even be looked up before a context is created at all.
-    ///   This means that, for at least some common OpenGL implementations, if you
-    ///   look up a function that doesn't exist, you'll get a non-null result that
-    ///   is _NOT_ safe to call. You must always make sure the function is actually
-    ///   available for a given GL context before calling it, by checking for the
-    ///   existence of the appropriate extension with `extensionSupported`,
-    ///   or verifying that the version of OpenGL you're using offers the function
-    ///   as core functionality.
-    /// - Some OpenGL drivers, on all platforms, *will* return null if a function
-    ///   isn't supported, but you can't count on this behavior. Check for
-    ///   extensions you use, and if you get a null anyway, act as if that
-    ///   extension wasn't available. This is probably a bug in the driver, but you
-    ///   can code defensively for this scenario anyhow.
-    /// - Just because you're on Linux/Unix, don't assume you'll be using X11.
-    ///   Next-gen display servers are waiting to replace it, and may or may not
-    ///   make the same promises about function pointers.
-    /// - OpenGL function pointers must be declared `APIENTRY` as in the example
-    ///   code. This will ensure the proper calling convention is followed on
-    ///   platforms where this matters (Win32) thereby avoiding stack corruption.
-    pub fn getProcAddress(proc: [:0]const u8) FunctionPointer {
-        return SDL_GL_GetProcAddress(@ptrCast(proc.ptr));
-    }
-    extern fn SDL_GL_GetProcAddress(proc: [*c]const u8) callconv(.c) FunctionPointer;
-
-    /// Check if an OpenGL extension is supported for the current context.
-    ///
-    /// This function operates on the current GL context; you must have created a
-    /// context and it must be current before calling this function. Do not assume
-    /// that all contexts you create will have the same set of extensions
-    /// available, or that recreating an existing context will offer the same
-    /// extensions again.
-    ///
-    /// While it's probably not a massive overhead, this function is not an O(1)
-    /// operation. Check the extensions you care about after creating the GL
-    /// context and save that information somewhere instead of calling the function
-    /// every time you need to know.
-    pub fn isExtensionSupported(extension: [:0]const u8) bool {
-        return SDL_GL_ExtensionSupported(@ptrCast(extension.ptr));
-    }
-    extern fn SDL_GL_ExtensionSupported(extension: [*c]const u8) bool;
-
-    /// Create an OpenGL context for an OpenGL window, and make it current.
-    ///
-    /// Windows users new to OpenGL should note that, for historical reasons, GL
-    /// functions added after OpenGL version 1.1 are not available by default.
-    /// Those functions must be loaded at run-time, either with an OpenGL
-    /// extension-handling library or with `getProcAddress` and its related
-    /// functions.
-    ///
-    /// SDL_GLContext is opaque to the application.
-    pub fn createContext(window: *Window) Error!Context {
-        return SDL_GL_CreateContext(window) orelse return makeError();
-    }
-    extern fn SDL_GL_CreateContext(window: *Window) ?Context;
-
-    /// Set up an OpenGL context for rendering into an OpenGL window.
-    ///
-    /// The context must have been created with a compatible window.
-    pub fn makeCurrent(window: *Window, context: Context) Error!void {
-        if (!SDL_GL_MakeCurrent(window, context)) return makeError();
-    }
-    extern fn SDL_GL_MakeCurrent(window: *Window, context: Context) bool;
-
-    /// Delete an OpenGL context.
-    pub const destroyContext = SDL_GL_DestroyContext;
-    extern fn SDL_GL_DestroyContext(context: Context) void;
-};
-
-/// Create a window with the specified dimensions and flags.
-///
-/// The window size is a request and may be different than expected based on
-/// the desktop layout and window manager policies. Your application should be
-/// prepared to handle a window of any size.
-///
-/// The `Window` is implicitly shown if `WindowHidden` is not set.
-///
-/// On Apple's macOS, you **must** set the NSHighResolutionCapable Info.plist
-/// property to YES, otherwise you will not receive a High-DPI OpenGL canvas.
-///
-/// The window pixel size may differ from its window coordinate size if the
-/// window is on a high pixel density display. Use `getWindowSize` to query
-/// the client area's size in window coordinates, and
-/// `getWindowSizeInPixels` or `getRenderOutputSize` to query the
-/// drawable size in pixels. Note that the drawable size can vary after the
-/// window is created and should be queried again if you get an
-/// SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED event.
-///
-/// If the window is created with any of the `opengl` or
-/// `vulkan` flags, then the corresponding `loadLibrary` function
-/// (`loadLibrary` or `loadLibrary`) is called and the
-/// corresponding `unloadLibrary` function is called by `destroyWindow`.
-///
-/// If `vulkan` is specified and there isn't a working Vulkan driver,
-/// `createWindow` will fail, because `loadLibrary` will fail.
-///
-/// If `metal` is specified on an OS that does not support Metal,
-/// `createWindow` will fail.
-///
-/// If you intend to use this window with an `renderer`, you should use
-/// `createWindowAndRenderer` instead of this function, to avoid window
-/// flicker.
-///
-/// On non-Apple devices, SDL requires you to either not link to the Vulkan
-/// loader or link to a dynamic library version. This limitation may be removed
-/// in a future version of SDL.
-pub fn createWindow(title: [:0]const u8, w: c_int, h: c_int, flags: Window.Flags) Error!*Window {
-    assert(w > 0);
-    assert(h > 0);
-    return SDL_CreateWindow(@ptrCast(title.ptr), w, h, flags) orelse return makeError();
-}
-extern fn SDL_CreateWindow(title: [*c]const u8, w: c_int, h: c_int, flags: Window.Flags) ?*Window;
-
-/// Destroy a window.
-///
-/// Any child windows owned by the window will be recursively destroyed as
-/// well.
-///
-/// Note that on some platforms, the visible window may not actually be removed
-/// from the screen until the SDL event loop is pumped again, even though the
-/// SDL_Window is no longer valid after this call.
-pub const destroyWindow = SDL_DestroyWindow;
-extern fn SDL_DestroyWindow(window: *Window) void;
-
-/// Query the display mode to use when a window is visible at fullscreen.
-pub const getWindowFullscreenMode = SDL_GetWindowFullscreenMode;
-extern fn SDL_GetWindowFullscreenMode(window: *Window) ?*const DisplayMode;
-
-/// Get the position of a window.
-///
-/// This is the current position of the window as last reported by the
-/// windowing system.
-///
-/// If you do not need the value for one of the positions a null may be passed
-/// in the `x` or `y` parameter.
-pub fn getWindowPosition(window: *Window, w: ?*c_int, h: ?*c_int) Error!void {
-    if (!SDL_GetWindowPosition(window, w, h)) return makeError();
-}
-extern fn SDL_GetWindowPosition(window: *Window, x: ?*c_int, y: ?*c_int) bool;
-
-/// Get the size of a window's client area.
-///
-/// The window pixel size may differ from its window coordinate size if the
-/// window is on a high pixel density display. Use `getWindowSizeInPixels`
-/// or `getRenderOutputSize` to get the real client area size in pixels.
-pub fn getWindowSize(window: *Window, w: ?*c_int, h: ?*c_int) Error!void {
-    if (!SDL_GetWindowSize(window, w, h)) return makeError();
-}
-extern fn SDL_GetWindowSize(window: *Window, w: ?*c_int, h: ?*c_int) bool;
-
-/// Get the size of a window's client area, in pixels.
-pub fn getWindowSizeInPixels(window: *Window, w: ?*c_int, h: ?*c_int) Error!void {
-    if (!SDL_GetWindowSizeInPixels(window, w, h)) return makeError();
-}
-extern fn SDL_GetWindowSizeInPixels(window: *Window, w: ?*c_int, h: ?*c_int) bool;
-
-/// Get the title of a window.
-pub fn setWindowTitle(window: *Window, title: [:0]const u8) void {
-    SDL_SetWindowTitle(window, @ptrCast(title.ptr));
-}
-extern fn SDL_SetWindowTitle(window: *Window, title: [*c]const u8) void;
-
-/// Get the number of video drivers compiled into SDL.
-pub const getNumVideoDrivers = SDL_GetNumVideoDrivers;
-extern fn SDL_GetNumVideoDrivers() c_int;
-
-/// Get the name of a built in video driver.
-///
-/// The video drivers are presented in the order in which they are normally
-/// checked during initialization.
-///
-/// The names of drivers are all simple, low-ASCII identifiers, like "cocoa",
-/// "x11" or "windows". These never have Unicode characters, and are not meant
-/// to be proper names.
-pub fn getVideoDriver(index: u16) ?[:0]const u8 {
-    if (SDL_GetVideoDriver(@intCast(index))) |ptr| {
-        return std.mem.span(ptr);
-    }
-    return null;
-}
-extern fn SDL_GetVideoDriver(index: c_int) [*c]const u8;
-
-/// Get the name of the currently initialized video driver.
-///
-/// The names of drivers are all simple, low-ASCII identifiers, like "cocoa",
-/// "x11" or "windows". These never have Unicode characters, and are not meant
-/// to be proper names.
-pub fn getCurrentVideoDriver() ?[:0]const u8 {
-    if (SDL_GetCurrentVideoDriver()) |ptr| {
-        return std.mem.span(ptr);
-    }
-    return null;
-}
-extern fn SDL_GetCurrentVideoDriver() [*c]const u8;
-
-/// Get the content scale of a display.
-///
-/// The content scale is the expected scale for content based on the DPI
-/// settings of the display. For example, a 4K display might have a 2.0 (200%)
-/// display scale, which means that the user expects UI elements to be twice as
-/// big on this display, to aid in readability.
-///
-/// After window creation, `getWindowDisplayScale` should be used to query
-/// the content scale factor for individual windows instead of querying the
-/// display for a window and calling this function, as the per-window content
-/// scale factor may differ from the base value of the display it is on,
-/// particularly on high-DPI and/or multi-monitor desktop configurations.
-pub fn getDisplayContentScale(display_id: DisplayId) ?f32 {
-    const scale = SDL_GetDisplayContentScale(display_id);
-    if (scale == 0.0) return null;
-    return scale;
-}
-extern fn SDL_GetDisplayContentScale(display_id: DisplayId) f32;
-
-/// Get the content display scale relative to a window's pixel size.
-///
-/// This is a combination of the window pixel density and the display content
-/// scale, and is the expected scale for displaying content in this window. For
-/// example, if a 3840x2160 window had a display scale of 2.0, the user expects
-/// the content to take twice as many pixels and be the same physical size as
-/// if it were being displayed in a 1920x1080 window with a display scale of
-/// 1.0.
-///
-/// Conceptually this value corresponds to the scale display setting, and is
-/// updated when that setting is changed, or the window moves to a display with
-/// a different scale setting.
-pub fn getWindowDisplayScale(window: *Window) ?f32 {
-    const scale = SDL_GetWindowDisplayScale(window);
-    if (scale == 0.0) return null;
-    return scale;
-}
-extern fn SDL_GetWindowDisplayScale(window: *Window) f32;
+const video_h = @import("sdl3/video.zig");
+pub const DisplayId = video_h.DisplayId;
+pub const WindowId = video_h.WindowId;
+pub const SystemTheme = video_h.SystemTheme;
+pub const DisplayMode = video_h.DisplayMode;
+pub const DisplayOrientation = video_h.DisplayOrientation;
+pub const Window = video_h.Window;
+pub const posUndefinedDisplay = video_h.posUndefinedDisplay;
+pub const pos_undefined = video_h.pos_undefined;
+pub const posIsUndefined = video_h.posIsUndefined;
+pub const posCenteredDisplay = video_h.posCenteredDisplay;
+pub const pos_centered = video_h.pos_centered;
+pub const posIsCentered = video_h.posIsCentered;
+pub const FlashOperation = video_h.FlashOperation;
+pub const GLContextState = video_h.GLContextState;
+pub const GLContext = video_h.GLContext;
+pub const EGLDisplay = video_h.EGLDisplay;
+pub const EGLConfig = video_h.EGLConfig;
+pub const EGLSurface = video_h.EGLSurface;
+pub const EGLAttrib = video_h.EGLAttrib;
+pub const EGLint = video_h.EGLint;
+pub const EGLAttribArrayCallback = video_h.EGLAttribArrayCallback;
+pub const EGLIntArrayCallback = video_h.EGLIntArrayCallback;
+pub const gl = video_h.gl;
+pub const createWindow = video_h.createWindow;
+pub const destroyWindow = video_h.destroyWindow;
+pub const getWindowFullscreenMode = video_h.getWindowFullscreenMode;
+pub const getWindowPosition = video_h.getWindowPosition;
+pub const getWindowSize = video_h.getWindowSize;
+pub const getWindowSizeInPixels = video_h.getWindowSizeInPixels;
+pub const setWindowTitle = video_h.setWindowTitle;
+pub const getNumVideoDrivers = video_h.getNumVideoDrivers;
+pub const getVideoDriver = video_h.getVideoDriver;
+pub const getCurrentVideoDriver = video_h.getCurrentVideoDriver;
+pub const getDisplayContentScale = video_h.getDisplayContentScale;
+pub const getWindowDisplayScale = video_h.getWindowDisplayScale;
 
 //--------------------------------------------------------------------------------------------------
-//
 // 2D Accelerated Rendering (SDL_render.h)
-//
 //--------------------------------------------------------------------------------------------------
-
-pub const Vertex = extern struct {
-    position: FPoint,
-    color: FColor,
-    tex_coord: FPoint,
-};
-
-pub const TextureAccess = enum(c_int) {
-    static,
-    streaming,
-    target,
-};
-
-pub const RendererLogicalPresentationMode = enum(c_int) {
-    disabled,
-    stretch,
-    letterbox,
-    overscan,
-    integer_scale,
-};
-
-pub const Texture = opaque {
-    pub const destroy = destroyTexture;
-    pub const lock = lockTexture;
-    pub const unlock = unlockTexture;
-};
-
-pub const destroyTexture = SDL_DestroyTexture;
-extern fn SDL_DestroyTexture(texture: ?*Texture) void;
-
-pub fn lockTexture(texture: *Texture, rect: ?*Rect) !struct {
-    pixels: [*]u8,
-    pitch: c_int,
-} {
-    var pixels: *anyopaque = undefined;
-    var pitch: c_int = undefined;
-    if (!SDL_LockTexture(texture, rect, &pixels, &pitch)) {
-        return makeError();
-    }
-    return .{
-        .pixels = @ptrCast(pixels),
-        .pitch = pitch,
-    };
-}
-extern fn SDL_LockTexture(
-    texture: *Texture,
-    rect: ?*Rect,
-    pixels: **anyopaque,
-    pitch: *c_int,
-) bool;
-
-pub const unlockTexture = SDL_UnlockTexture;
-extern fn SDL_UnlockTexture(texture: *Texture) void;
-
-pub const Renderer = opaque {
-    pub const Flags = packed struct(u32) {
-        software: bool = false,
-        accelerated: bool = false,
-        present_vsync: bool = false,
-        _: u29 = 0,
-    };
-
-    pub const create = createRenderer;
-    pub const destroy = destroyRenderer;
-    pub const present = renderPresent;
-    pub const debugText = renderDebugText;
-};
-
-/// Get the number of 2D rendering drivers available for the current display.
-///
-/// A render driver is a set of code that handles rendering and texture
-/// management on a particular display. Normally there is only one, but some
-/// drivers may have several available with different capabilities.
-///
-/// There may be none if SDL was compiled without render support.
-pub const getNumRenderDrivers = SDL_GetNumRenderDrivers;
-extern fn SDL_GetNumRenderDrivers() c_int;
-
-/// Use this function to get the name of a built in 2D rendering driver.
-///
-/// The list of rendering drivers is given in the order that they are normally
-/// initialized by default; the drivers that seem more reasonable to choose
-/// first (as far as the SDL developers believe) are earlier in the list.
-///
-/// The names of drivers are all simple, low-ASCII identifiers, like "opengl",
-/// "direct3d12" or "metal". These never have Unicode characters, and are not
-/// meant to be proper names.
-pub fn getRenderDriver(index: c_int) ?[:0]const u8 {
-    if (SDL_GetRenderDriver(index)) |ptr| {
-        return std.mem.span(ptr);
-    }
-    return null;
-}
-extern fn SDL_GetRenderDriver(index: c_int) [*c]const u8;
-
-/// Create a window and default renderer.
-pub fn createWindowAndRenderer(
-    window_title: [:0]const u8,
-    width: c_int,
-    height: c_int,
-    window_flags: Window.Flags,
-    window: **Window,
-    renderer: **Renderer,
-) Error!void {
-    assert(width > 0);
-    assert(height > 0);
-    if (!SDL_CreateWindowAndRenderer(
-        @ptrCast(window_title.ptr),
-        width,
-        height,
-        window_flags,
-        @ptrCast(window),
-        @ptrCast(renderer),
-    )) {
-        return makeError();
-    }
-}
-extern fn SDL_CreateWindowAndRenderer(
-    title: [*c]const u8,
-    width: c_int,
-    height: c_int,
-    window_flags: Window.Flags,
-    window: ?*?*Window,
-    renderer: ?*?*Renderer,
-) bool;
-
-/// Create a 2D rendering context for a window.
-///
-/// If you want a specific renderer, you can specify its name here. A list of
-/// available renderers can be obtained by calling SDL_GetRenderDriver()
-/// multiple times, with indices from 0 to SDL_GetNumRenderDrivers()-1. If you
-/// don't need a specific renderer, specify NULL and SDL will attempt to choose
-/// the best option for you, based on what is available on the user's system.
-///
-/// If `name` is a comma-separated list, SDL will try each name, in the order
-/// listed, until one succeeds or all of them fail.
-///
-/// By default the rendering size matches the window size in pixels, but you
-/// can call SDL_SetRenderLogicalPresentation() to change the content size and
-/// scaling options.
-pub fn createRenderer(window: *Window, maybe_name: ?[:0]const u8) Error!*Renderer {
-    return SDL_CreateRenderer(
-        window,
-        if (maybe_name) |name| @as([*c]const u8, @ptrCast(name.ptr)) else null,
-    ) orelse makeError();
-}
-extern fn SDL_CreateRenderer(window: *Window, name: [*c]const u8) ?*Renderer;
-
-// TODO
-
-pub const destroyRenderer = SDL_DestroyRenderer;
-extern fn SDL_DestroyRenderer(r: *Renderer) void;
+const render_h = @import("sdl3/render.zig");
+pub const Vertex = render_h.Vertex;
+pub const TextureAccess = render_h.TextureAccess;
+pub const RendererLogicalPresentationMode = render_h.RendererLogicalPresentationMode;
+pub const Texture = render_h.Texture;
+pub const destroyTexture = render_h.destroyTexture;
+pub const lockTexture = render_h.lockTexture;
+pub const unlockTexture = render_h.unlockTexture;
+pub const Renderer = render_h.Renderer;
+pub const getNumRenderDrivers = render_h.getNumRenderDrivers;
+pub const getRenderDriver = render_h.getRenderDriver;
+pub const createWindowAndRenderer = render_h.createWindowAndRenderer;
+pub const createRenderer = render_h.createRenderer;
+pub const destroyRenderer = render_h.destroyRenderer;
+pub const renderClear = render_h.renderClear;
+pub const renderPresent = render_h.renderPresent;
+pub const renderTexture = render_h.renderTexture;
+pub const renderTextureRotated = render_h.renderTextureRotated;
+pub const setRenderScale = render_h.setRenderScale;
+pub const renderLine = render_h.renderLine;
+pub const renderPoint = render_h.renderPoint;
+pub const renderFillRect = render_h.renderFillRect;
+pub const renderRect = render_h.renderRect;
+pub const renderGeometry = render_h.renderGeometry;
+pub const setRenderDrawColor = render_h.setRenderDrawColor;
+pub const getRenderDrawColor = render_h.getRenderDrawColor;
+pub const getRenderDrawBlendMode = render_h.getRenderDrawBlendMode;
+pub const setRenderDrawBlendMode = render_h.setRenderDrawBlendMode;
+pub const getCurrentRenderOutputSize = render_h.getCurrentRenderOutputSize;
+pub const createTexture = render_h.createTexture;
+pub const createTextureFromSurface = render_h.createTextureFromSurface;
+pub const renderClipEnabled = render_h.renderClipEnabled;
+pub const setRenderClipRect = render_h.setRenderClipRect;
+pub const getRenderClipRect = render_h.getRenderClipRect;
+pub const getRenderLogicalPresentation = render_h.getRenderLogicalPresentation;
+pub const setRenderLogicalPresentation = render_h.setRenderLogicalPresentation;
+pub const getRenderViewport = render_h.getRenderViewport;
+pub const setRenderViewport = render_h.setRenderViewport;
+pub const setRenderTarget = render_h.setRenderTarget;
+pub const renderReadPixels = render_h.renderReadPixels;
+pub const renderDebugText = render_h.renderDebugText;
 
 //--------------------------------------------------------------------------------------------------
-//
-// Blend modes (SDL_blendmode.h)
-//
-//--------------------------------------------------------------------------------------------------
-
-pub const BlendMode = enum(c_int) {
-    none = 0x00000000,
-    blend = 0x00000001,
-    add = 0x00000002,
-    mod = 0x00000004,
-    multiply = 0x00000008,
-    invalid = 0x7fffffff,
-};
-
-pub const ScaleMode = enum(c_int) {
-    nearest = 0x0000,
-    linear = 0x0001,
-    best = 0x0002,
-};
-
-pub fn renderClear(r: *Renderer) !void {
-    if (!SDL_RenderClear(r)) return makeError();
-}
-extern fn SDL_RenderClear(r: *Renderer) bool;
-
-pub const renderPresent = SDL_RenderPresent;
-extern fn SDL_RenderPresent(r: *Renderer) void;
-
-pub fn renderTexture(
-    r: *Renderer,
-    tex: *Texture,
-    src: ?*const FRect,
-    dst: ?*const FRect,
-) Error!void {
-    if (!SDL_RenderTexture(r, tex, src, dst)) {
-        return makeError();
-    }
-}
-extern fn SDL_RenderTexture(
-    r: *Renderer,
-    t: *Texture,
-    srcrect: ?*const FRect,
-    dstrect: ?*const FRect,
-) bool;
-
-pub fn renderTextureRotated(
-    r: *Renderer,
-    tex: *Texture,
-    src: ?*const FRect,
-    dst: ?*const FRect,
-    angle: f64,
-    center: ?*const FPoint,
-    flip: Surface.FlipMode,
-) Error!void {
-    if (!SDL_RenderTextureRotated(r, tex, src, dst, angle, center, flip)) {
-        return makeError();
-    }
-}
-extern fn SDL_RenderTextureRotated(
-    r: *Renderer,
-    t: *Texture,
-    srcrect: ?*const FRect,
-    dstrect: ?*const FRect,
-    angle: f64,
-    center: ?*const FPoint,
-    flip: Surface.FlipMode,
-) bool;
-
-pub fn setRenderScale(renderer: *Renderer, x: f32, y: f32) Error!void {
-    if (!SDL_SetRenderScale(renderer, x, y)) return makeError();
-}
-extern fn SDL_SetRenderScale(renderer: *Renderer, scaleX: f32, scaleY: f32) bool;
-
-pub fn renderLine(renderer: *Renderer, x0: f32, y0: f32, x1: f32, y1: f32) Error!void {
-    if (!SDL_RenderLine(renderer, x0, y0, x1, y1)) return makeError();
-}
-extern fn SDL_RenderLine(renderer: *Renderer, x1: f32, y1: f32, x2: f32, y2: f32) bool;
-
-pub fn renderPoint(renderer: *Renderer, x: f32, y: f32) Error!void {
-    if (!SDL_RenderPoint(renderer, x, y)) return makeError();
-}
-extern fn SDL_RenderPoint(renderer: *Renderer, x: f32, y: f32) bool;
-
-pub fn renderFillRect(renderer: *Renderer, _rect: FRect) Error!void {
-    if (!SDL_RenderFillRect(renderer, &_rect)) return makeError();
-}
-extern fn SDL_RenderFillRect(renderer: ?*Renderer, rect: *const FRect) bool;
-
-pub fn renderRect(renderer: *Renderer, _rect: FRect) Error!void {
-    if (!SDL_RenderRect(renderer, &_rect)) return makeError();
-}
-extern fn SDL_RenderRect(renderer: *Renderer, rect: *const FRect) bool;
-
-pub fn renderGeometry(
-    r: *Renderer,
-    tex: ?*const Texture,
-    vertices: []const Vertex,
-    maybe_indices: ?[]const c_int,
-) Error!void {
-    if (!SDL_RenderGeometry(
-        r,
-        tex,
-        vertices.ptr,
-        @intCast(vertices.len),
-        if (maybe_indices) |indices| indices.ptr else null,
-        if (maybe_indices) |indices| @intCast(indices.len) else 0,
-    )) {
-        return makeError();
-    }
-}
-extern fn SDL_RenderGeometry(
-    renderer: *Renderer,
-    texture: ?*const Texture,
-    vertices: [*c]const Vertex,
-    num_vertices: c_int,
-    indices: [*c]const c_int,
-    num_indices: c_int,
-) bool;
-
-pub fn setRenderDrawColor(renderer: *Renderer, color: Color) Error!void {
-    if (!SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a)) {
-        return makeError();
-    }
-}
-extern fn SDL_SetRenderDrawColor(renderer: *Renderer, r: u8, g: u8, b: u8, a: u8) bool;
-
-pub fn getRenderDrawColor(renderer: *const Renderer) Error!Color {
-    var color: Color = undefined;
-    if (!SDL_GetRenderDrawColor(renderer, &color.r, &color.g, &color.b, &color.a)) {
-        return makeError();
-    }
-    return color;
-}
-extern fn SDL_GetRenderDrawColor(renderer: *const Renderer, r: *u8, g: *u8, b: *u8, a: *u8) bool;
-
-pub fn getRenderDrawBlendMode(r: *const Renderer) Error!BlendMode {
-    var blend_mode: BlendMode = undefined;
-    if (!SDL_GetRenderDrawBlendMode(r, &blend_mode)) return makeError();
-    return blend_mode;
-}
-extern fn SDL_GetRenderDrawBlendMode(renderer: *const Renderer, blendMode: *BlendMode) bool;
-
-pub fn setRenderDrawBlendMode(r: *Renderer, blend_mode: BlendMode) Error!void {
-    if (!SDL_SetRenderDrawBlendMode(r, blend_mode)) return makeError();
-}
-extern fn SDL_SetRenderDrawBlendMode(renderer: *Renderer, blendMode: BlendMode) bool;
-
-pub fn getCurrentRenderOutputSize(r: *const Renderer, w: ?*c_int, h: ?*c_int) Error!void {
-    if (!SDL_GetCurrentRenderOutputSize(r, w, h)) return makeError();
-}
-extern fn SDL_GetCurrentRenderOutputSize(renderer: *const Renderer, w: ?*c_int, h: ?*c_int) bool;
-
-pub fn createTexture(
-    renderer: *Renderer,
-    format: PixelFormatEnum,
-    access: TextureAccess,
-    width: c_int,
-    height: c_int,
-) Error!*Texture {
-    assert(width > 0);
-    assert(height > 0);
-    return SDL_CreateTexture(renderer, format, access, width, height) orelse makeError();
-}
-extern fn SDL_CreateTexture(
-    renderer: *Renderer,
-    format: PixelFormatEnum,
-    access: TextureAccess,
-    w: c_int,
-    h: c_int,
-) ?*Texture;
-
-pub fn createTextureFromSurface(renderer: *Renderer, surface: *Surface) Error!*Texture {
-    return SDL_CreateTextureFromSurface(renderer, surface) orelse makeError();
-}
-extern fn SDL_CreateTextureFromSurface(renderer: *Renderer, surface: *Surface) ?*Texture;
-
-pub const renderClipEnabled = SDL_RenderClipEnabled;
-pub extern fn SDL_RenderClipEnabled(renderer: *const Renderer) bool;
-
-pub fn setRenderClipRect(r: *Renderer, clip_rect: ?*const Rect) Error!void {
-    if (!SDL_SetRenderClipRect(r, clip_rect)) return makeError();
-}
-extern fn SDL_SetRenderClipRect(renderer: *Renderer, rect: ?*const Rect) bool;
-
-pub fn getRenderClipRect(r: *Renderer) Error!Rect {
-    var clip_rect: Rect = undefined;
-    if (!SDL_GetRenderClipRect(r, &clip_rect)) return makeError();
-    return clip_rect;
-}
-extern fn SDL_GetRenderClipRect(renderer: *Renderer, rect: ?*Rect) bool;
-
-pub fn getRenderLogicalPresentation(
-    renderer: *const Renderer,
-    w: *c_int,
-    h: *c_int,
-    mode: *RendererLogicalPresentationMode,
-    scale_mode: *ScaleMode,
-) Error!void {
-    if (!SDL_GetRenderLogicalPresentation(renderer, w, h, mode, scale_mode)) {
-        return makeError();
-    }
-}
-extern fn SDL_GetRenderLogicalPresentation(
-    renderer: *const Renderer,
-    w: *c_int,
-    h: *c_int,
-    mode: *RendererLogicalPresentationMode,
-    scale_mode: *ScaleMode,
-) bool;
-
-pub fn setRenderLogicalPresentation(
-    renderer: *Renderer,
-    w: c_int,
-    h: c_int,
-    mode: RendererLogicalPresentationMode,
-    scale_mode: ScaleMode,
-) Error!void {
-    if (!SDL_SetRenderLogicalPresentation(renderer, w, h, mode, scale_mode)) {
-        return makeError();
-    }
-}
-extern fn SDL_SetRenderLogicalPresentation(
-    renderer: *Renderer,
-    w: c_int,
-    h: c_int,
-    mode: RendererLogicalPresentationMode,
-    scale_mode: ScaleMode,
-) bool;
-
-pub fn getRenderViewport(renderer: *const Renderer) Error!Rect {
-    var viewport: Rect = undefined;
-    if (SDL_GetRenderViewport(renderer, &viewport)) {
-        return viewport;
-    } else {
-        return makeError();
-    }
-}
-extern fn SDL_GetRenderViewport(renderer: *const Renderer, rect: *Rect) bool;
-
-pub fn setRenderViewport(renderer: *Renderer, maybe_rect: ?*const Rect) Error!void {
-    if (!SDL_SetRenderViewport(renderer, maybe_rect)) {
-        return makeError();
-    }
-}
-extern fn SDL_SetRenderViewport(renderer: *Renderer, rect: ?*const Rect) bool;
-
-pub fn setRenderTarget(r: *Renderer, tex: ?*const Texture) Error!void {
-    if (!SDL_SetRenderTarget(r, tex)) return makeError();
-}
-extern fn SDL_SetRenderTarget(renderer: *Renderer, texture: ?*const Texture) bool;
-
-pub fn renderReadPixels(
-    renderer: *const Renderer,
-    _rect: ?*const Rect,
-    format: PixelFormatEnum,
-    pixels: [*]u8,
-    pitch: c_int,
-) Error!void {
-    if (!SDL_RenderReadPixels(renderer, _rect, format, pixels, pitch)) {
-        return makeError();
-    }
-}
-extern fn SDL_RenderReadPixels(
-    renderer: *const Renderer,
-    rect: ?*const Rect,
-    format: PixelFormatEnum,
-    pixels: ?*anyopaque,
-    pitch: c_int,
-) bool;
-
-pub fn renderDebugText(renderer: *Renderer, x: f32, y: f32, str: [:0]const u8) Error!void {
-    if (!SDL_RenderDebugText(renderer, x, y, @ptrCast(str.ptr))) return makeError();
-}
-extern fn SDL_RenderDebugText(renderer: *Renderer, x: f32, y: f32, str: [*c]const u8) bool;
-
-//--------------------------------------------------------------------------------------------------
-//
 // Pixel Formats and Conversion Routines (SDL_pixels.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const ALPHA_OPAQUE: u8 = 255;
-pub const ALPHA_OPAQUE_FLOAT: f32 = 1.0;
-pub const ALPHA_TRANSPARENT: u8 = 0;
-pub const ALPHA_TRANSPARENT_FLOAT: f32 = 0.0;
-
-pub const PixelType = enum(c_int) {
-    unknown = 0,
-    index1,
-    index4,
-    index8,
-    packed8,
-    packed16,
-    packed32,
-    arrayu8,
-    arrayu16,
-    arrayu32,
-    arrayf16,
-    arrayf32,
-    // appended at end for compatibility with sdl2-compat
-    index2,
-};
-
-/// Bitmap pixel order, high bit -> low bit.
-pub const BitmapOrder = enum(c_int) {
-    none = 0,
-    @"4321",
-    @"1234",
-};
-
-/// Packed component order, high bit -> low bit.
-pub const PackedOrder = enum(c_int) {
-    none = 0,
-    xrgb,
-    rgbx,
-    argb,
-    rgba,
-    xbgr,
-    bgrx,
-    abgr,
-    bgra,
-};
-
-/// Array component order, low byte -> high byte.
-pub const ArrayOrder = enum(c_int) {
-    none = 0,
-    rgb,
-    rgba,
-    argb,
-    bgr,
-    bgra,
-    abgr,
-};
-
-/// Packed component layout.
-pub const PackedLayout = enum(c_int) {
-    none = 0,
-    @"332",
-    @"4444",
-    @"1555",
-    @"5551",
-    @"565",
-    @"8888",
-    @"2101010",
-    @"1010102",
-};
-
-fn definePixelFormatEnum(
-    _type: PixelType,
-    order: anytype,
-    layout: u32,
-    bits: u32,
-    bytes: u32,
-) u32 {
-    switch (_type) {
-        .index1, .index2, .index4, .index8 => {
-            assert(@TypeOf(order) == BitmapOrder);
-        },
-        .packed8, .packed16, .packed32 => {
-            assert(@TypeOf(order) == PackedOrder);
-        },
-        .arrayu8, .arrayu16, .arrayu32, .arrayf16, .arrayf32 => {
-            assert(@TypeOf(order) == ArrayOrder);
-        },
-        .unknown => unreachable,
-    }
-    return ((1 << 28) | ((@backingInt(_type)) << 24) | ((@backingInt(order)) << 20) |
-        ((layout) << 16) | ((bits) << 8) | ((bytes) << 0));
-}
-
-/// SDL's pixel formats have the following naming convention:
-///
-/// - Names with a list of components and a single bit count, such as RGB24 and
-///   ABGR32, define a platform-independent encoding into bytes in the order
-///   specified. For example, in RGB24 data, each pixel is encoded in 3 bytes
-///   (red, green, blue) in that order, and in ABGR32 data, each pixel is
-///   encoded in 4 bytes alpha, blue, green, red) in that order. Use these
-///   names if the property of a format that is important to you is the order
-///   of the bytes in memory or on disk.
-/// - Names with a bit count per component, such as ARGB8888 and XRGB1555, are
-///   "packed" into an appropriately-sized integer in the platform's native
-///   endianness. For example, ARGB8888 is a sequence of 32-bit integers; in
-///   each integer, the most significant bits are alpha, and the least
-///   significant bits are blue. On a little-endian CPU such as x86, the least
-///   significant bits of each integer are arranged first in memory, but on a
-///   big-endian CPU such as s390x, the most significant bits are arranged
-///   first. Use these names if the property of a format that is important to
-///   you is the meaning of each bit position within a native-endianness
-///   integer.
-/// - In indexed formats such as INDEX4LSB, each pixel is represented by
-///   encoding an index into the palette into the indicated number of bits,
-///   with multiple pixels packed into each byte if appropriate. In LSB
-///   formats, the first (leftmost) pixel is stored in the least-significant
-///   bits of the byte; in MSB formats, it's stored in the most-significant
-///   bits. INDEX8 does not need LSB/MSB variants, because each pixel exactly
-///   fills one byte.
-///
-/// The 32-bit byte-array encodings such as RGBA32 are aliases for the
-/// appropriate 8888 encoding for the current platform. For example, RGBA32 is
-/// an alias for ABGR8888 on little-endian CPUs like x86, or an alias for
-/// RGBA8888 on big-endian CPUs.
-pub const PixelFormatEnum = enum(u32) {
-    index1lsb = definePixelFormatEnum(.index1, BitmapOrder.@"4321", 0, 1, 0),
-    index1msb = definePixelFormatEnum(.index1, BitmapOrder.@"1234", 0, 1, 0),
-    index4lsb = definePixelFormatEnum(.index4, BitmapOrder.@"4321", 0, 4, 0),
-    index4msb = definePixelFormatEnum(.index4, BitmapOrder.@"1234", 0, 4, 0),
-    index8 = definePixelFormatEnum(.index8, BitmapOrder.none, 0, 8, 1),
-    rgb332 = definePixelFormatEnum(.packed8, PackedOrder.xrgb, @backingInt(PackedLayout.@"332"), 8, 1),
-    xrgb4444 = definePixelFormatEnum(.packed16, PackedOrder.xrgb, @backingInt(PackedLayout.@"4444"), 12, 2),
-    xbgr4444 = definePixelFormatEnum(.packed16, PackedOrder.xbgr, @backingInt(PackedLayout.@"4444"), 12, 2),
-    xrgb1555 = definePixelFormatEnum(.packed16, PackedOrder.xrgb, @backingInt(PackedLayout.@"1555"), 15, 2),
-    xbgr1555 = definePixelFormatEnum(.packed16, PackedOrder.xbgr, @backingInt(PackedLayout.@"1555"), 15, 2),
-    argb4444 = definePixelFormatEnum(.packed16, PackedOrder.argb, @backingInt(PackedLayout.@"4444"), 16, 2),
-    rgba4444 = definePixelFormatEnum(.packed16, PackedOrder.rgba, @backingInt(PackedLayout.@"4444"), 16, 2),
-    abgr4444 = definePixelFormatEnum(.packed16, PackedOrder.abgr, @backingInt(PackedLayout.@"4444"), 16, 2),
-    bgra4444 = definePixelFormatEnum(.packed16, PackedOrder.bgra, @backingInt(PackedLayout.@"4444"), 16, 2),
-    argb1555 = definePixelFormatEnum(.packed16, PackedOrder.argb, @backingInt(PackedLayout.@"1555"), 16, 2),
-    rgba5551 = definePixelFormatEnum(.packed16, PackedOrder.rgba, @backingInt(PackedLayout.@"5551"), 16, 2),
-    abgr1555 = definePixelFormatEnum(.packed16, PackedOrder.abgr, @backingInt(PackedLayout.@"1555"), 16, 2),
-    bgra5551 = definePixelFormatEnum(.packed16, PackedOrder.bgra, @backingInt(PackedLayout.@"5551"), 16, 2),
-    rgb565 = definePixelFormatEnum(.packed16, PackedOrder.xrgb, @backingInt(PackedLayout.@"565"), 16, 2),
-    bgr565 = definePixelFormatEnum(.packed16, PackedOrder.xbgr, @backingInt(PackedLayout.@"565"), 16, 2),
-    rgb24 = definePixelFormatEnum(.arrayu8, ArrayOrder.rgb, 0, 24, 3),
-    bgr24 = definePixelFormatEnum(.arrayu8, ArrayOrder.bgr, 0, 24, 3),
-    xrgb8888 = definePixelFormatEnum(.packed32, PackedOrder.xrgb, @backingInt(PackedLayout.@"8888"), 24, 4),
-    rgbx8888 = definePixelFormatEnum(.packed32, PackedOrder.rgbx, @backingInt(PackedLayout.@"8888"), 24, 4),
-    xbgr8888 = definePixelFormatEnum(.packed32, PackedOrder.xbgr, @backingInt(PackedLayout.@"8888"), 24, 4),
-    bgrx8888 = definePixelFormatEnum(.packed32, PackedOrder.bgrx, @backingInt(PackedLayout.@"8888"), 24, 4),
-    argb8888 = definePixelFormatEnum(.packed32, PackedOrder.argb, @backingInt(PackedLayout.@"8888"), 32, 4),
-    rgba8888 = definePixelFormatEnum(.packed32, PackedOrder.rgba, @backingInt(PackedLayout.@"8888"), 32, 4),
-    abgr8888 = definePixelFormatEnum(.packed32, PackedOrder.abgr, @backingInt(PackedLayout.@"8888"), 32, 4),
-    bgra8888 = definePixelFormatEnum(.packed32, PackedOrder.bgra, @backingInt(PackedLayout.@"8888"), 32, 4),
-    argb2101010 = definePixelFormatEnum(.packed32, PackedOrder.argb, @backingInt(PackedLayout.@"2101010"), 32, 4),
-};
-
-pub const Color = extern struct {
-    r: u8,
-    g: u8,
-    b: u8,
-    a: u8,
-};
-
-pub const FColor = extern struct {
-    r: f32,
-    g: f32,
-    b: f32,
-    a: f32,
-};
+const pixels_h = @import("sdl3/pixels.zig");
+pub const ALPHA_OPAQUE = pixels_h.ALPHA_OPAQUE;
+pub const ALPHA_OPAQUE_FLOAT = pixels_h.ALPHA_OPAQUE_FLOAT;
+pub const ALPHA_TRANSPARENT = pixels_h.ALPHA_TRANSPARENT;
+pub const ALPHA_TRANSPARENT_FLOAT = pixels_h.ALPHA_TRANSPARENT_FLOAT;
+pub const PixelType = pixels_h.PixelType;
+pub const BitmapOrder = pixels_h.BitmapOrder;
+pub const PackedOrder = pixels_h.PackedOrder;
+pub const ArrayOrder = pixels_h.ArrayOrder;
+pub const PackedLayout = pixels_h.PackedLayout;
+pub const PixelFormatEnum = pixels_h.PixelFormatEnum;
+pub const Color = pixels_h.Color;
+pub const FColor = pixels_h.FColor;
 
 //--------------------------------------------------------------------------------------------------
-//
+// Blend modes (SDL_blendmode.h)
+//--------------------------------------------------------------------------------------------------
+const blendmode_h = @import("sdl3/blendmode.zig");
+pub const BlendMode = blendmode_h.BlendMode;
+
+//--------------------------------------------------------------------------------------------------
 // Rectangle Functions (SDL_rect.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const Rect = extern struct {
-    x: c_int,
-    y: c_int,
-    w: c_int,
-    h: c_int,
-
-    pub fn hasIntersection(a: *const Rect, b: *const Rect) bool {
-        return hasRectIntersection(a, b);
-    }
-
-    pub fn getIntersection(a: *const Rect, b: *const Rect, result: *Rect) bool {
-        return getRectIntersection(a, b, result);
-    }
-
-    pub fn getLineIntersection(rect: *const Rect, x1: *i32, y1: *i32, x2: *i32, y2: *i32) bool {
-        return getRectAndLineIntersection(rect, x1, y1, x2, y2);
-    }
-};
-
-pub const hasRectIntersection = SDL_HasRectIntersection;
-extern fn SDL_HasRectIntersection(a: *const Rect, b: *const Rect) bool;
-
-pub const getRectIntersection = SDL_GetRectIntersection;
-extern fn SDL_GetRectIntersection(a: *const Rect, b: *const Rect, result: *Rect) bool;
-
-pub const getRectAndLineIntersection = SDL_GetRectAndLineIntersection;
-extern fn SDL_GetRectAndLineIntersection(
-    r: *const Rect,
-    x1: *c_int,
-    y1: *c_int,
-    x2: *c_int,
-    y2: *c_int,
-) bool;
-
-pub const FRect = extern struct {
-    x: f32,
-    y: f32,
-    w: f32,
-    h: f32,
-
-    pub fn hasIntersection(a: *const FRect, b: *const FRect) bool {
-        return hasRectIntersectionFloat(a, b);
-    }
-
-    pub fn getRectIntersecton(a: *const FRect, b: *const FRect, result: *FRect) bool {
-        return getRectIntersectionFloat(a, b, result);
-    }
-
-    pub fn getLineIntersection(rect: *const FRect, x1: *f32, y1: *f32, x2: *f32, y2: *f32) bool {
-        return getRectAndLineIntersectionFloat(rect, x1, y1, x2, y2);
-    }
-};
-
-pub const hasRectIntersectionFloat = SDL_HasRectIntersectionFloat;
-extern fn SDL_HasRectIntersectionFloat(a: *const FRect, b: *const FRect) bool;
-
-pub const getRectIntersectionFloat = SDL_GetRectIntersectionFloat;
-extern fn SDL_GetRectIntersectionFloat(a: *const FRect, b: *const FRect, result: *FRect) bool;
-
-pub const getRectAndLineIntersectionFloat = SDL_GetRectAndLineIntersectionFloat;
-extern fn SDL_GetRectAndLineIntersectionFloat(
-    r: *const FRect,
-    x1: *f32,
-    y1: *f32,
-    x2: *f32,
-    y2: *f32,
-) bool;
-
-pub const Point = extern struct {
-    x: c_int,
-    y: c_int,
-};
-
-pub const FPoint = extern struct {
-    x: f32,
-    y: f32,
-};
+const rect_h = @import("sdl3/rect.zig");
+pub const Rect = rect_h.Rect;
+pub const hasRectIntersection = rect_h.hasRectIntersection;
+pub const getRectIntersection = rect_h.getRectIntersection;
+pub const getRectAndLineIntersection = rect_h.getRectAndLineIntersection;
+pub const FRect = rect_h.FRect;
+pub const hasRectIntersectionFloat = rect_h.hasRectIntersectionFloat;
+pub const getRectIntersectionFloat = rect_h.getRectIntersectionFloat;
+pub const getRectAndLineIntersectionFloat = rect_h.getRectAndLineIntersectionFloat;
+pub const Point = rect_h.Point;
+pub const FPoint = rect_h.FPoint;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Surface Creation and Simple Drawing (SDL_surface.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const Surface = opaque {
-    pub const Flags = packed struct(u32) {
-        /// Surface uses preallocatred pixel memory
-        preallocated: bool = false,
-        /// Surface needs to be locked to access pixels
-        lock_needed: bool = false,
-        /// Surface is currently locked
-        locked: bool = false,
-        /// Surface used pixel memory allocated wth SDL_aliged_alloc()
-        simd_aligned: bool = false,
-        _: u28 = 0,
-    };
-
-    pub const ScaleMode = enum(c_int) {
-        nearest,
-        linear,
-    };
-
-    pub const FlipMode = enum(c_int) {
-        none,
-        horizontal,
-        vertical,
-    };
-
-    pub const destroy = destroySurface;
-};
-
-// TODO:
-// - SDL_CreateSurface
-// - SDL_CreateSurfaceFrom
-
-pub fn destroySurface(surface: *Surface) void {
-    SDL_DestroySurface(surface);
-}
-extern fn SDL_DestroySurface(surface: *Surface) void;
-
-// TODO:
-// - SDL_GetSurfaceProperties
-// - SDL_SetSurfaceColorspace
-// - SDL_GetSurfaceColorspace
-// - SDL_CreateSurfacePalette
-// - SDL_SetSurfacePalette
-// - SDL_GetSurfacePalette
-// - SDL_AddSurfaceAlternateImage
-// - SDL_SurfaceHasAlternateImages
-// - SDL_GetSurfaceImages
-// - SDL_RemoveSurfaceAlternateImages
-// - SDL_LockSurface
-// - SDL_UnlockSurface
-// - SDL_LoadBMP_IO
-// - SDL_LoadBMP
-// - SDL_SaveBMP_IO
-// - SDL_SaveBMP
-// - SDL_SetSurfaceRLE
-// - SDL_SurfaceHasRLE
-// - SDL_SetSurfaceColorKey
-// - SDL_SurfaceHasColorKey
-// - SDL_GetSurfaceColorKey
-// - SDL_SetSurfaceColorMod
-// - SDL_GetSurfaceColorMod
-// - SDL_SetSurfaceAlphaMod
-// - SDL_GetSurfaceAlphaMod
-// - SDL_SetSurfaceBlendMode
-// - SDL_GetSurfaceBlendMode
-// - SDL_SetSurfaceClipRect
-// - SDL_GetSurfaceClipRect
-// - SDL_FlipSurface
-// - SDL_DuplicateSurface
-// - SDL_ScaleSurface
-// - SDL_ConvertSurface
-// - SDL_ConvertSurfaceAndColorspace
-// - SDL_ConvertPixels
-// - SDL_ConvertPixelsAndColorspace
-// - SDL_PremultiplyAlpha
-// - SDL_PremultiplySurfaceAlpha
-// - SDL_ClearSurface
-// - SDL_FillSurfaceRect
-// - SDL_FillSurfaceRects
-// - SDL_BlitSurface
-// - SDL_BlitSurfaceUnchecked
-// - SDL_BlitSurfaceScaled
-// - SDL_BlitSurfaceUncheckedScaled
-// - SDL_StretchSurface
-// - SDL_BlitSurfaceTiled
-// - SDL_BlitSurfaceTiledWithScale
-// - SDL_BlitSurface9Grid
-// - SDL_MapSurfaceRGB
-// - SDL_MapSurfaceRGBA
-// - SDL_ReadSurfacePixel
-// - SDL_ReadSurfacePixelFloat
-// - SDL_WriteSurfacePixel
-// - SDL_WriteSurfacePixelFloat
+const surface_h = @import("sdl3/surface.zig");
+pub const ScaleMode = surface_h.ScaleMode;
+pub const Surface = surface_h.Surface;
+pub const destroySurface = surface_h.destroySurface;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Clipboard Handling (SDL_clipboard.h)
-//
 //--------------------------------------------------------------------------------------------------
-// TODO
+const clipboard_h = @import("sdl3/clipboard.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Vulkan Support (SDL_vulkan.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const vk = struct {
-    pub const FunctionPointer = ?*const anyopaque;
-    pub const Instance = enum(usize) { null_handle = 0, _ };
-    pub const PhysicalDevice = enum(usize) { null_handle = 0, _ };
-    pub const SurfaceKHR = enum(usize) { null_handle = 0, _ };
-
-    pub fn loadLibrary(path: [:0]const u8) Error!void {
-        if (!SDL_Vulkan_LoadLibrary(@ptrCast(path.ptr))) return makeError();
-    }
-    extern fn SDL_Vulkan_LoadLibrary(path: [*c]const u8) bool;
-
-    pub const getVkGetInstanceProcAddr = SDL_Vulkan_GetVkGetInstanceProcAddr;
-    extern fn SDL_Vulkan_GetVkGetInstanceProcAddr() FunctionPointer;
-
-    pub const unloadLibrary = SDL_Vulkan_UnloadLibrary;
-    extern fn SDL_Vulkan_UnloadLibrary() void;
-
-    pub const getInstanceExtensions = SDL_Vulkan_GetInstanceExtensions;
-    extern fn SDL_Vulkan_GetInstanceExtensions(count: *u32) [*c]const [*c]const u8;
-
-    pub const getPresentationSupport = SDL_Vulkan_GetPresentationSupport;
-    extern fn SDL_Vulkan_GetPresentationSupport(instance: Instance, physical_device: PhysicalDevice, queue_family_index: u32) bool;
-
-    pub const createSurface = SDL_Vulkan_CreateSurface;
-    extern fn SDL_Vulkan_CreateSurface(window: *Window, instance: Instance, allocator_callbacks: ?*anyopaque, surface: *anyopaque) bool;
-
-    pub const destroySurface = SDL_Vulkan_DestroySurface;
-    extern fn SDL_Vulkan_DestroySurface(instance: Instance, surface: SurfaceKHR, allocator_callbacks: ?*anyopaque) void;
-};
+const vulkan_h = @import("sdl3/vulkan.zig");
+pub const vk = vulkan_h.vk;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Metal Support (SDL_metal.h)
-//
 //--------------------------------------------------------------------------------------------------
-// TODO
+const metal_h = @import("sdl3/metal.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Camera (SDL_camera.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const CameraId = enum(u32) { invalid = 0, _ };
-
-pub const Camera = opaque {};
-
-// TODO: Camera API
+const camera_h = @import("sdl3/camera.zig");
+pub const CameraId = camera_h.CameraId;
+pub const Camera = camera_h.Camera;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Event Handling (SDL_events.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const EventType = enum(u32) {
-    first = 0,
-
-    quit = 0x100,
-    terminating,
-    low_memory,
-    will_enter_background,
-    did_enter_background,
-    will_enter_foreground,
-    did_enter_foreground,
-    locale_changed,
-    system_theme_changed,
-
-    // Display events
-    // _reserved_sdl2compat_displayevent = 0x150,
-    display_orientation = 0x151,
-    display_connected,
-    display_disconnected,
-    display_moved,
-    display_content_scale_changed,
-
-    // Window events
-    // _reserved_sdl2compat_windowevent = 0x200,
-    // _reserved_sdl2compat_syswm = 0x201
-    window_shown = 0x202,
-    window_hidden,
-    window_exposed,
-    window_moved,
-    window_resized,
-    window_pixel_size_changed,
-    window_minimized,
-    window_maximized,
-    window_restored,
-    window_mouse_enter,
-    window_mouse_leave,
-    window_focus_gained,
-    window_focus_lost,
-    window_close_requested,
-    window_take_focus,
-    window_hit_test,
-    window_iccprof_changed,
-    window_display_changed,
-    window_display_scale_changed,
-    window_destroyed,
-    window_hdr_state_changed,
-
-    // Keyboard events
-    key_down = 0x300,
-    key_up,
-    text_editing,
-    text_input,
-    keymap_changed,
-    keyboard_added,
-    keyboard_removed,
-    text_editing_candidates,
-
-    // Mouse events
-    mouse_motion = 0x400,
-    mouse_button_down,
-    mouse_button_up,
-    mouse_wheel,
-    mouse_added,
-    mouse_removed,
-
-    // Joystick events
-    joystick_axis_motion = 0x600,
-    joystick_ball_motion,
-    joystick_hat_motion,
-    joystick_button_down,
-    joystick_button_up,
-    joystick_added,
-    joystick_removed,
-    joystick_battery_updated,
-    joystick_update_complete,
-
-    // Gamepad events
-    gamepad_axis_motion = 0x650,
-    gamepad_button_down,
-    gamepad_button_up,
-    gamepad_added,
-    gamepad_removed,
-    gamepad_remapped,
-    gamepad_touchpad_down,
-    gamepad_touchpad_motion,
-    gamepad_touchpad_up,
-    gamepad_sensor_update,
-    gamepad_update_complete,
-    gamepad_steam_handle_updated,
-
-    // Touch events
-    finger_down = 0x700,
-    finger_up,
-    finger_motion,
-    finger_cancelled,
-
-    // 0x800, 0x801, 0x802 were gesture events from SDL2, reserved for sdl compat
-    // _reserved_sdl2compat_dollargesture = 0x800,
-    // _reserved_sdl2compat_dollarrecord,
-    // _reserved_sdl2compat_multigesture,
-
-    // CLipboard events
-    clipboard_update = 0x900,
-
-    // Drag and drop events
-    drop_file = 0x1000,
-    drop_text,
-    drop_begin,
-    drop_complete,
-    drop_position,
-
-    // Audio hotplug events
-    audio_device_added = 0x1100,
-    audio_device_removed,
-    audio_device_format_changed,
-
-    // Sensor events
-    sensor_update = 0x1200,
-
-    // Pressure-sensitive pen events
-    pen_proximity_in = 0x1300,
-    pen_proximity_out,
-    pen_down,
-    pen_up,
-    pen_button_down,
-    pen_button_up,
-    pen_motion,
-    pen_axis,
-
-    // Camera hotplug events
-    camera_device_added = 0x1400,
-    camera_device_removed,
-    camera_device_approved,
-    camera_device_denied,
-
-    // Render events
-    render_targets_reset = 0x2000,
-    render_device_reset,
-    render_device_lost,
-
-    // Reserved events for private platforms
-    private0 = 0x4000,
-    private1,
-    private2,
-    private3,
-
-    // Internal events
-    poll_sentinel = 0x7f00,
-
-    // 0x8000 to 0xffff are for your own use, and should be allocated with SDL_RegisterEvents
-    // user = 0x8000,
-    _,
-};
-
-pub const CommonEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-};
-
-pub const DisplayEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    display_id: DisplayId,
-    data1: i32,
-    data2: i32,
-};
-
-pub const WindowEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    window_id: WindowId,
-    data1: i32,
-    data2: i32,
-};
-
-pub const KeyboardDeviceEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    which: KeyboardId,
-};
-
-pub const KeyboardEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    window_id: WindowId,
-    which: KeyboardId,
-    scancode: Scancode,
-    key: Keycode,
-    mod: Keymod,
-    raw: u16,
-    down: bool,
-    repeat: bool,
-};
-
-pub const TextEditingEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    window_id: WindowId,
-    text: [*c]const u8,
-    start: i32,
-    length: i32,
-};
-
-pub const TextEditingCandidatesEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    window_id: WindowId,
-    candidates: *const [*c]const u8,
-    num_candidates: i32,
-    selected_candidate: i32,
-    horizontal: bool,
-    // padding
-    _: u8,
-    __: u8,
-    ___: u8,
-};
-
-pub const TextInputEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    window_id: WindowId,
-    text: [*c]const u8,
-};
-
-pub const MouseDeviceEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    which: MouseId,
-};
-
-pub const MouseMotionEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    window_id: WindowId,
-    which: MouseId,
-    state: MouseButtonFlags,
-    x: f32,
-    y: f32,
-    xrel: f32,
-    yrel: f32,
-};
-
-pub const MouseButtonEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    window_id: WindowId,
-    which: MouseId,
-    button: u8,
-    down: bool,
-    clicks: u8,
-    _: u8, // padding
-    x: f32,
-    y: f32,
-};
-
-pub const MouseWheelEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    window_id: WindowId,
-    which: MouseId,
-    x: f32,
-    y: f32,
-    direction: MouseWheelDirection,
-    mouse_x: f32,
-    mouse_y: f32,
-};
-
-pub const JoyAxisEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    which: Joystick.Id,
-    axis: u8,
-    // padding
-    _: u8,
-    __: u8,
-    ___: u8,
-    value: i16,
-    ____: u16, // padding
-};
-
-pub const JoyBallEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    which: Joystick.Id,
-    ball: u8,
-    // padding
-    _: u8,
-    __: u8,
-    ___: u8,
-    xrel: i16,
-    yrel: i16,
-};
-
-pub const JoyHatEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    which: Joystick.Id,
-    hat: u8,
-    value: u8,
-    _: u16, // padding
-};
-
-pub const JoyButtonEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    which: Joystick.Id,
-    button: u8,
-    down: bool,
-    _: u16, // padding
-};
-
-pub const JoyDeviceEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    which: Joystick.Id,
-};
-
-pub const JoyBatteryEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    which: Joystick.Id,
-    state: PowerState,
-    percent: c_int,
-};
-
-pub const GamepadAxisEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    which: Joystick.Id,
-    axis: u8,
-    // padding
-    _: u8,
-    __: u8,
-    ___: u8,
-    value: i16,
-    ____: u16, // padding
-};
-
-pub const GamepadButtonEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    which: Joystick.Id,
-    button: u8,
-    down: bool,
-    _: u16, // padding
-};
-
-pub const GamepadDeviceEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    which: Joystick.Id,
-};
-
-pub const GamepadTouchpadEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u32,
-    which: Joystick.Id,
-    touchpad: i32,
-    finger: i32,
-    x: f32,
-    y: f32,
-    pressure: f32,
-};
-
-pub const GamepadSensorEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    which: Joystick.Id,
-    senor: i32,
-    data: [3]f32,
-    sensor_timestamp: u64,
-};
-
-pub const AudioDeviceEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    which: AudioDeviceId,
-    recording: bool,
-    // padding
-    _: u8,
-    __: u8,
-    ___: u8,
-};
-
-pub const CameraDeviceEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    which: CameraId,
-};
-
-pub const RenderEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    window_id: WindowId,
-};
-
-pub const TouchFingerEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    touch_id: TouchId,
-    finger_id: FingerId,
-    x: f32,
-    y: f32,
-    dx: f32,
-    dy: f32,
-    pressure: f32,
-    window_id: WindowId,
-};
-
-pub const PenProximityEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    window_id: WindowId,
-    which: PenId,
-};
-
-pub const PenMotionEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    window_id: WindowId,
-    which: PenId,
-    pen_state: PenInputFlags,
-    x: f32,
-    y: f32,
-};
-
-pub const PenTouchEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    window_id: WindowId,
-    which: PenId,
-    pen_state: PenInputFlags,
-    x: f32,
-    y: f32,
-    eraser: bool,
-    down: bool,
-};
-
-pub const PenButtonEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    window_id: WindowId,
-    which: PenId,
-    pen_state: PenInputFlags,
-    x: f32,
-    y: f32,
-    button: u8,
-    down: bool,
-};
-
-pub const PenAxisEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    window_id: WindowId,
-    which: PenId,
-    pen_state: PenInputFlags,
-    x: f32,
-    y: f32,
-    axis: PenAxis,
-    value: f32,
-};
-
-pub const DropEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    window_id: WindowId,
-    x: f32,
-    y: f32,
-    source: [*c]const u8,
-    data: [*c]const u8,
-};
-
-pub const ClipboardEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    owner: bool,
-    num_mime_types: i32,
-    mime_types: [*c][*c]const u8,
-};
-
-pub const SensorEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    which: SensorId,
-    data: [6]f32,
-    sensor_timestamp: u64,
-};
-
-pub const QuitEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-};
-
-pub const UserEvent = extern struct {
-    type: EventType,
-    reserved: u32,
-    timestamp: u64,
-    window_id: WindowId,
-    code: i32,
-    data1: ?*anyopaque,
-    data2: ?*anyopaque,
-};
-
-pub const Event = extern union {
-    type: EventType,
-    common: CommonEvent,
-    display: DisplayEvent,
-    window: WindowEvent,
-    kdevice: KeyboardDeviceEvent,
-    key: KeyboardEvent,
-    edit: TextEditingEvent,
-    edit_candidates: TextEditingCandidatesEvent,
-    text: TextInputEvent,
-    mdevice: MouseDeviceEvent,
-    motion: MouseMotionEvent,
-    button: MouseButtonEvent,
-    wheel: MouseWheelEvent,
-    jdevice: JoyDeviceEvent,
-    jaxis: JoyAxisEvent,
-    jball: JoyBallEvent,
-    jhat: JoyHatEvent,
-    jbutton: JoyButtonEvent,
-    jbattery: JoyBatteryEvent,
-    gdevice: GamepadDeviceEvent,
-    gaxis: GamepadAxisEvent,
-    gbutton: GamepadButtonEvent,
-    gtouchpad: GamepadTouchpadEvent,
-    gsensor: GamepadSensorEvent,
-    adevice: AudioDeviceEvent,
-    cdevice: CameraDeviceEvent,
-    sensor: SensorEvent,
-    quit: QuitEvent,
-    user: UserEvent,
-    tfinger: TouchFingerEvent,
-    pproximity: PenProximityEvent,
-    ptouch: PenTouchEvent,
-    pmotion: PenMotionEvent,
-    pbutton: PenButtonEvent,
-    paxis: PenAxisEvent,
-    render: RenderEvent,
-    drop: DropEvent,
-    clipboard: ClipboardEvent,
-    _: [128]u8, // padding
-};
-
-/// Pump the event loop, gathering events from the input devices.
-pub const pumpEvents = SDL_PumpEvents;
-extern fn SDL_PumpEvents() void;
-
-/// The type of action to request from SDL_PeepEvents().
-pub const EventAction = enum(c_int) {
-    /// Add events to the back of the queue.
-    addevent,
-    /// Check but don't remove events from the queue front.
-    peekevent,
-    /// Retrieve/remove events from the front of the queue.
-    getevent,
-};
-
-// TODO
-// - SDL_PeepEvents
-// - SDL_HasEvent
-// - SDL_HasEvents
-// - SDL_FlushEvent
-// - SDL_FlushEvents
-
-pub const pollEvent = SDL_PollEvent;
-extern fn SDL_PollEvent(event: ?*Event) bool;
-
-// TODO
-// - SDL_WaitEvent
-// - SDL_WaitEventTimeout
-
-/// You should set the common.timestamp field before passing an event to `pushEvent`.
-/// If the timestamp is 0 it will be filled in with `getTicksNS()`.
-/// Returns true if event was added, false if event was filtered out or on failure;
-/// call SDL_GetError() for more information.
-pub const pushEvent = SDL_PushEvent;
-extern fn SDL_PushEvent(event: *Event) bool;
-
-/// A function pointer used for callbacks that watch the event queue.
-pub const EventFilter = fn (userdata: ?*anyopaque, event: *Event) bool;
-
-/// TODO
-// - SDL_SetEventFilter
-// - SDL_GetEventFilter
-// - SDL_AddEventWatch
-// - SDL_RemoveEventWatch
-// - SDL_FilterEvents
-// - SDL_SetEventEnabled
-// - SDL_EventEnabled
-// - SDL_RegisterEvents
-// - SDL_GetWindowFromEvent
+const events_h = @import("sdl3/events.zig");
+pub const EventType = events_h.EventType;
+pub const CommonEvent = events_h.CommonEvent;
+pub const DisplayEvent = events_h.DisplayEvent;
+pub const WindowEvent = events_h.WindowEvent;
+pub const KeyboardDeviceEvent = events_h.KeyboardDeviceEvent;
+pub const KeyboardEvent = events_h.KeyboardEvent;
+pub const TextEditingEvent = events_h.TextEditingEvent;
+pub const TextEditingCandidatesEvent = events_h.TextEditingCandidatesEvent;
+pub const TextInputEvent = events_h.TextInputEvent;
+pub const MouseDeviceEvent = events_h.MouseDeviceEvent;
+pub const MouseMotionEvent = events_h.MouseMotionEvent;
+pub const MouseButtonEvent = events_h.MouseButtonEvent;
+pub const MouseWheelEvent = events_h.MouseWheelEvent;
+pub const JoyAxisEvent = events_h.JoyAxisEvent;
+pub const JoyBallEvent = events_h.JoyBallEvent;
+pub const JoyHatEvent = events_h.JoyHatEvent;
+pub const JoyButtonEvent = events_h.JoyButtonEvent;
+pub const JoyDeviceEvent = events_h.JoyDeviceEvent;
+pub const JoyBatteryEvent = events_h.JoyBatteryEvent;
+pub const GamepadAxisEvent = events_h.GamepadAxisEvent;
+pub const GamepadButtonEvent = events_h.GamepadButtonEvent;
+pub const GamepadDeviceEvent = events_h.GamepadDeviceEvent;
+pub const GamepadTouchpadEvent = events_h.GamepadTouchpadEvent;
+pub const GamepadSensorEvent = events_h.GamepadSensorEvent;
+pub const AudioDeviceEvent = events_h.AudioDeviceEvent;
+pub const CameraDeviceEvent = events_h.CameraDeviceEvent;
+pub const RenderEvent = events_h.RenderEvent;
+pub const TouchFingerEvent = events_h.TouchFingerEvent;
+pub const PenProximityEvent = events_h.PenProximityEvent;
+pub const PenMotionEvent = events_h.PenMotionEvent;
+pub const PenTouchEvent = events_h.PenTouchEvent;
+pub const PenButtonEvent = events_h.PenButtonEvent;
+pub const PenAxisEvent = events_h.PenAxisEvent;
+pub const DropEvent = events_h.DropEvent;
+pub const ClipboardEvent = events_h.ClipboardEvent;
+pub const SensorEvent = events_h.SensorEvent;
+pub const QuitEvent = events_h.QuitEvent;
+pub const UserEvent = events_h.UserEvent;
+pub const Event = events_h.Event;
+pub const pumpEvents = events_h.pumpEvents;
+pub const EventAction = events_h.EventAction;
+pub const pollEvent = events_h.pollEvent;
+pub const pushEvent = events_h.pushEvent;
+pub const EventFilter = events_h.EventFilter;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Keyboard Support (SDL_keyboard.h)
-//
 //--------------------------------------------------------------------------------------------------
-
-/// This is a unique ID for a keyboard for the time it is connected to the
-/// system, and is never reused for the lifetime of the application.
-///
-/// If the keyboard is disconnected and reconnected, it will get a new ID.
-///
-/// The value 0 is an invalid ID.
-pub const KeyboardId = enum(u32) { invalid = 0, _ };
-
-/// Return whether a keyboard is currently connected.
-pub const hasKeyboard = SDL_HasKeyboard;
-extern fn SDL_HasKeyboard() bool;
-
-/// Get a list of currently connected keyboards.
-///
-/// Note that this will include any device or virtual driver that includes
-/// keyboard functionality, including some mice, KVM switches, motherboard
-/// power buttons, etc. You should wait for input from a device before you
-/// consider it actively in use.
-pub fn getKeyboards() Error![]KeyboardId {
-    var count: c_int = undefined;
-    const keyboards = SDL_GetKeyboards(&count) orelse return makeError();
-    return keyboards[0..@intCast(count)];
-}
-extern fn SDL_GetKeyboards(count: ?*c_int) ?[*]KeyboardId;
-
-/// Get the name of a keyboard.
-///
-/// This function returns "" if the keyboard doesn't have a name.
-pub fn getKeyboardNameForId(instance_id: KeyboardId) Error![:0]const u8 {
-    const name = SDL_GetKeyboardNameForID(instance_id) orelse return makeError();
-    return std.mem.span(name);
-}
-extern fn SDL_GetKeyboardNameForID(instance_id: KeyboardId) ?[*:0]const u8;
-
-/// Query the window which currently has keyboard focus.
-pub const getKeyboardFocus = SDL_GetKeyboardFocus;
-extern fn SDL_GetKeyboardFocus() ?*Window;
-
-/// Get a snapshot of the current state of the keyboard.
-///
-/// The pointer returned is a pointer to an internal SDL array. It will be
-/// valid for the whole lifetime of the application and should not be freed by
-/// the caller.
-///
-/// A array element with a value of true means that the key is pressed and a
-/// value of false means that it is not. Indexes into this array are obtained
-/// by using `Scancode` values.
-///
-/// Use `pumpEvents` to update the state array.
-///
-/// This function gives you the current state after all events have been
-/// processed, so if a key or button has been pressed and released before you
-/// process events, then the pressed state will never show up in the
-/// `getKeyboardState` calls.
-///
-/// Note: This function doesn't take into account whether shift has been
-/// pressed or not.
-pub fn getKeyboardState() []const bool {
-    var numkeys: c_int = undefined;
-    const ptr = SDL_GetKeyboardState(&numkeys) orelse return &.{};
-    return ptr[0..@intCast(numkeys)];
-}
-extern fn SDL_GetKeyboardState(numkeys: ?*c_int) ?[*]const bool;
-
-/// Clear the state of the keyboard.
-///
-/// This function will generate key up events for all pressed keys.
-pub const resetKeyboard = SDL_ResetKeyboard;
-extern fn SDL_ResetKeyboard() void;
-
-/// Get the current key modifier state for the keyboard.
-pub const getModState = SDL_GetModState;
-extern fn SDL_GetModState() Keymod;
-
-/// Set the current key modifier state for the keyboard.
-///
-/// The inverse of SDL_GetModState(), SDL_SetModState() allows you to impose
-/// modifier key states on your application. Simply pass your desired modifier
-/// states into `modstate`. This value may be a bitwise, OR'd combination of
-/// SDL_Keymod values.
-///
-/// This does not change the keyboard state, only the key modifier flags that
-/// SDL reports.
-pub const setModState = SDL_SetModState;
-extern fn SDL_SetModState(modstate: Keymod) void;
-
-// TODO
-// - SDL_GetKeyFromScancode
-// - SDL_GetScancodeFromKey
-// - SDL_SetScancodeName
-// - SDL_GetScancodeName
-// - SDL_GetScancodeFromName
-// - SDL_GetKeyName
-// - SDL_GetKeyFromName
-// - SDL_StartTextInput
-// - SDL_StartTextInputWithProperties
-// - SDL_TextInputActive
-// - SDL_StopTextInput
-// - SDL_ClearComposition
-// - SDL_SetTextInputArea
-// - SDL_GetTextInputArea
-// - SDL_HasScreenKeyboardSupport
-// - SDL_ScreenKeyboardShown
+const keyboard_h = @import("sdl3/keyboard.zig");
+pub const KeyboardId = keyboard_h.KeyboardId;
+pub const hasKeyboard = keyboard_h.hasKeyboard;
+pub const getKeyboards = keyboard_h.getKeyboards;
+pub const getKeyboardNameForId = keyboard_h.getKeyboardNameForId;
+pub const getKeyboardFocus = keyboard_h.getKeyboardFocus;
+pub const getKeyboardState = keyboard_h.getKeyboardState;
+pub const resetKeyboard = keyboard_h.resetKeyboard;
+pub const getModState = keyboard_h.getModState;
+pub const setModState = keyboard_h.setModState;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Keyboard Scancodes (SDL_scancode.h)
-//
 //--------------------------------------------------------------------------------------------------
-/// The SDL keyboard scancode representation.
-///
-/// An SDL scancode is the physical representation of a key on the keyboard,
-/// independent of language and keyboard mapping.
-///
-/// Values of this type are used to represent keyboard keys, among other places
-/// in the `scancode` field of the SDL_KeyboardEvent structure.
-///
-/// The values in this enumeration are based on the USB usage page standard:
-/// https://usb.org/sites/default/files/hut1_5.pdf
-pub const Scancode = enum(u32) {
-    unknown = 0,
-    a = 4,
-    b = 5,
-    c = 6,
-    d = 7,
-    e = 8,
-    f = 9,
-    g = 10,
-    h = 11,
-    i = 12,
-    j = 13,
-    k = 14,
-    l = 15,
-    m = 16,
-    n = 17,
-    o = 18,
-    p = 19,
-    q = 20,
-    r = 21,
-    s = 22,
-    t = 23,
-    u = 24,
-    v = 25,
-    w = 26,
-    x = 27,
-    y = 28,
-    z = 29,
-    @"1" = 30,
-    @"2" = 31,
-    @"3" = 32,
-    @"4" = 33,
-    @"5" = 34,
-    @"6" = 35,
-    @"7" = 36,
-    @"8" = 37,
-    @"9" = 38,
-    @"0" = 39,
-    @"return" = 40,
-    escape = 41,
-    backspace = 42,
-    tab = 43,
-    space = 44,
-    minus = 45,
-    equals = 46,
-    leftbracket = 47,
-    rightbracket = 48,
-    backslash = 49,
-    nonushash = 50,
-    semicolon = 51,
-    apostrophe = 52,
-    grave = 53,
-    comma = 54,
-    period = 55,
-    slash = 56,
-    capslock = 57,
-    f1 = 58,
-    f2 = 59,
-    f3 = 60,
-    f4 = 61,
-    f5 = 62,
-    f6 = 63,
-    f7 = 64,
-    f8 = 65,
-    f9 = 66,
-    f10 = 67,
-    f11 = 68,
-    f12 = 69,
-    printscreen = 70,
-    scrolllock = 71,
-    pause = 72,
-    insert = 73,
-    home = 74,
-    pageup = 75,
-    delete = 76,
-    end = 77,
-    pagedown = 78,
-    right = 79,
-    left = 80,
-    down = 81,
-    up = 82,
-    numlockclear = 83,
-    kp_divide = 84,
-    kp_multiply = 85,
-    kp_minus = 86,
-    kp_plus = 87,
-    kp_enter = 88,
-    kp_1 = 89,
-    kp_2 = 90,
-    kp_3 = 91,
-    kp_4 = 92,
-    kp_5 = 93,
-    kp_6 = 94,
-    kp_7 = 95,
-    kp_8 = 96,
-    kp_9 = 97,
-    kp_0 = 98,
-    kp_period = 99,
-    nonusbackslash = 100,
-    application = 101,
-    power = 102,
-    kp_equals = 103,
-    f13 = 104,
-    f14 = 105,
-    f15 = 106,
-    f16 = 107,
-    f17 = 108,
-    f18 = 109,
-    f19 = 110,
-    f20 = 111,
-    f21 = 112,
-    f22 = 113,
-    f23 = 114,
-    f24 = 115,
-    execute = 116,
-    help = 117,
-    menu = 118,
-    select = 119,
-    stop = 120,
-    again = 121,
-    undo = 122,
-    cut = 123,
-    copy = 124,
-    paste = 125,
-    find = 126,
-    mute = 127,
-    volumeup = 128,
-    volumedown = 129,
-    // lockingcapslock, lockingnumlock, lockingscrolllock disabled in SDL_scancode.h
-    kp_comma = 133,
-    kp_equalsas400 = 134,
-    international1 = 135,
-    international2 = 136,
-    international3 = 137,
-    international4 = 138,
-    international5 = 139,
-    international6 = 140,
-    international7 = 141,
-    international8 = 142,
-    international9 = 143,
-    lang1 = 144,
-    lang2 = 145,
-    lang3 = 146,
-    lang4 = 147,
-    lang5 = 148,
-    lang6 = 149,
-    lang7 = 150,
-    lang8 = 151,
-    lang9 = 152,
-    alterase = 153,
-    sysreq = 154,
-    cancel = 155,
-    clear = 156,
-    prior = 157,
-    return2 = 158,
-    separator = 159,
-    out = 160,
-    oper = 161,
-    clearagain = 162,
-    crsel = 163,
-    exsel = 164,
-    kp_00 = 176,
-    kp_000 = 177,
-    thousandsseparator = 178,
-    decimalseparator = 179,
-    currencyunit = 180,
-    currencysubunit = 181,
-    kp_leftparen = 182,
-    kp_rightparen = 183,
-    kp_leftbrace = 184,
-    kp_rightbrace = 185,
-    kp_tab = 186,
-    kp_backspace = 187,
-    kp_a = 188,
-    kp_b = 189,
-    kp_c = 190,
-    kp_d = 191,
-    kp_e = 192,
-    kp_f = 193,
-    kp_xor = 194,
-    kp_power = 195,
-    kp_percent = 196,
-    kp_less = 197,
-    kp_greater = 198,
-    kp_ampersand = 199,
-    kp_dblampersand = 200,
-    kp_verticalbar = 201,
-    kp_dblverticalbar = 202,
-    kp_colon = 203,
-    kp_hash = 204,
-    kp_space = 205,
-    kp_at = 206,
-    kp_exclam = 207,
-    kp_memstore = 208,
-    kp_memrecall = 209,
-    kp_memclear = 210,
-    kp_memadd = 211,
-    kp_memsubtract = 212,
-    kp_memmultiply = 213,
-    kp_memdivide = 214,
-    kp_plusminus = 215,
-    kp_clear = 216,
-    kp_clearentry = 217,
-    kp_binary = 218,
-    kp_octal = 219,
-    kp_decimal = 220,
-    kp_hexadecimal = 221,
-    lctrl = 224,
-    lshift = 225,
-    lalt = 226,
-    lgui = 227,
-    rctrl = 228,
-    rshift = 229,
-    ralt = 230,
-    rgui = 231,
-    mode = 257,
-    sleep = 258,
-    wake = 259,
-    channel_increment = 260,
-    channel_decrement = 261,
-    media_play = 262,
-    media_pause = 263,
-    media_record = 264,
-    media_fast_forward = 265,
-    media_rewind = 266,
-    media_next_track = 267,
-    media_previous_track = 268,
-    media_stop = 269,
-    media_eject = 270,
-    media_play_pause = 271,
-    media_select = 272,
-    ac_new = 273,
-    ac_open = 274,
-    ac_close = 275,
-    ac_exit = 276,
-    ac_save = 277,
-    ac_print = 278,
-    ac_properties = 279,
-    ac_search = 280,
-    ac_home = 281,
-    ac_back = 282,
-    ac_forward = 283,
-    ac_stop = 284,
-    ac_refresh = 285,
-    ac_bookmarks = 286,
-    softleft = 287,
-    softright = 288,
-    call = 289,
-    endcall = 290,
-    _,
-    // 400 - 500 reserved for dynamic keyboard
-};
-
-pub inline fn SCANCODE_TO_KEYCODE(scancode: u32) u32 {
-    return scancode | (1 << 30);
-}
+const scancode_h = @import("sdl3/scancode.zig");
+pub const Scancode = scancode_h.Scancode;
+pub const SCANCODE_TO_KEYCODE = scancode_h.SCANCODE_TO_KEYCODE;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Keyboard Keycodes (SDL_keycode.h)
-//
 //--------------------------------------------------------------------------------------------------
-/// The SDL virtual key representation.
-///
-/// Values of this type are used to represent keyboard keys using the current
-/// layout of the keyboard. These values include Unicode values representing
-/// the unmodified character that would be generated by pressing the key, or an
-/// `SDLK_*` constant for those keys that do not generate characters.
-///
-/// A special exception is the number keys at the top of the keyboard which map
-/// to SDLK_0...SDLK_9 on AZERTY layouts.
-///
-/// Keys with the `SDLK_EXTENDED_MASK` bit set do not map to a scancode or
-/// unicode code point.
-pub const Keycode = enum(u32) {
-    pub const EXTENDED_MASK: u32 = 1 << 29;
-    pub const SCANCODE_MASK: u32 = 1 << 30;
-
-    pub inline fn fromScancode(scancode: Scancode) Keycode {
-        return @fromBackingInt(@intCast(SCANCODE_TO_KEYCODE(@backingInt(scancode))));
-    }
-
-    unknown = 0,
-    @"return" = '\r',
-    escape = '\x1b',
-    backspace = '\x08',
-    tab = '\t',
-    space = ' ',
-    exclaim = '!',
-    dblapostrophe = '"',
-    hash = '#',
-    percent = '%',
-    dollar = '$',
-    ampersand = '&',
-    apostrophe = '\'',
-    leftparen = '(',
-    rightparen = ')',
-    asterisk = '*',
-    plus = '+',
-    comma = ',',
-    minus = '-',
-    period = '.',
-    slash = '/',
-    @"0" = '0',
-    @"1" = '1',
-    @"2" = '2',
-    @"3" = '3',
-    @"4" = '4',
-    @"5" = '5',
-    @"6" = '6',
-    @"7" = '7',
-    @"8" = '8',
-    @"9" = '9',
-    colon = ':',
-    semicolon = ';',
-    less = '<',
-    equals = '=',
-    greater = '>',
-    question = '?',
-    at = '@',
-    leftbracket = '[',
-    backslash = '\\',
-    rightbracket = ']',
-    caret = '^',
-    underscore = '_',
-    grave = '`',
-    a = 'a',
-    b = 'b',
-    c = 'c',
-    d = 'd',
-    e = 'e',
-    f = 'f',
-    g = 'g',
-    h = 'h',
-    i = 'i',
-    j = 'j',
-    k = 'k',
-    l = 'l',
-    m = 'm',
-    n = 'n',
-    o = 'o',
-    p = 'p',
-    q = 'q',
-    r = 'r',
-    s = 's',
-    t = 't',
-    u = 'u',
-    v = 'v',
-    w = 'w',
-    x = 'x',
-    y = 'y',
-    z = 'z',
-    leftbrace = '{',
-    pipe = '|',
-    rightbrace = '}',
-    tilde = '~',
-    delete = '\x7f',
-    plusminus = '\x81',
-    capslock = SCANCODE_TO_KEYCODE(@backingInt(Scancode.capslock)),
-    f1 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f1)),
-    f2 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f2)),
-    f3 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f3)),
-    f4 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f4)),
-    f5 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f5)),
-    f6 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f6)),
-    f7 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f7)),
-    f8 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f8)),
-    f9 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f9)),
-    f10 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f10)),
-    f11 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f11)),
-    f12 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f12)),
-    printscreen = SCANCODE_TO_KEYCODE(@backingInt(Scancode.printscreen)),
-    scrolllock = SCANCODE_TO_KEYCODE(@backingInt(Scancode.scrolllock)),
-    pause = SCANCODE_TO_KEYCODE(@backingInt(Scancode.pause)),
-    insert = SCANCODE_TO_KEYCODE(@backingInt(Scancode.insert)),
-    home = SCANCODE_TO_KEYCODE(@backingInt(Scancode.home)),
-    pageup = SCANCODE_TO_KEYCODE(@backingInt(Scancode.pageup)),
-    end = SCANCODE_TO_KEYCODE(@backingInt(Scancode.end)),
-    pagedown = SCANCODE_TO_KEYCODE(@backingInt(Scancode.pagedown)),
-    right = SCANCODE_TO_KEYCODE(@backingInt(Scancode.right)),
-    left = SCANCODE_TO_KEYCODE(@backingInt(Scancode.left)),
-    down = SCANCODE_TO_KEYCODE(@backingInt(Scancode.down)),
-    up = SCANCODE_TO_KEYCODE(@backingInt(Scancode.up)),
-    numlockclear = SCANCODE_TO_KEYCODE(@backingInt(Scancode.numlockclear)),
-    kp_divide = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_divide)),
-    kp_multiply = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_multiply)),
-    kp_minus = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_minus)),
-    kp_plus = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_plus)),
-    kp_enter = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_enter)),
-    kp_1 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_1)),
-    kp_2 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_2)),
-    kp_3 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_3)),
-    kp_4 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_4)),
-    kp_5 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_5)),
-    kp_6 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_6)),
-    kp_7 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_7)),
-    kp_8 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_8)),
-    kp_9 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_9)),
-    kp_0 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_0)),
-    kp_period = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_period)),
-    application = SCANCODE_TO_KEYCODE(@backingInt(Scancode.application)),
-    power = SCANCODE_TO_KEYCODE(@backingInt(Scancode.power)),
-    kp_equals = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_equals)),
-    f13 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f13)),
-    f14 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f14)),
-    f15 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f15)),
-    f16 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f16)),
-    f17 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f17)),
-    f18 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f18)),
-    f19 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f19)),
-    f20 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f20)),
-    f21 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f21)),
-    f22 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f22)),
-    f23 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f23)),
-    f24 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.f24)),
-    execute = SCANCODE_TO_KEYCODE(@backingInt(Scancode.execute)),
-    help = SCANCODE_TO_KEYCODE(@backingInt(Scancode.help)),
-    menu = SCANCODE_TO_KEYCODE(@backingInt(Scancode.menu)),
-    select = SCANCODE_TO_KEYCODE(@backingInt(Scancode.select)),
-    stop = SCANCODE_TO_KEYCODE(@backingInt(Scancode.stop)),
-    again = SCANCODE_TO_KEYCODE(@backingInt(Scancode.again)),
-    undo = SCANCODE_TO_KEYCODE(@backingInt(Scancode.undo)),
-    cut = SCANCODE_TO_KEYCODE(@backingInt(Scancode.cut)),
-    copy = SCANCODE_TO_KEYCODE(@backingInt(Scancode.copy)),
-    paste = SCANCODE_TO_KEYCODE(@backingInt(Scancode.paste)),
-    find = SCANCODE_TO_KEYCODE(@backingInt(Scancode.find)),
-    mute = SCANCODE_TO_KEYCODE(@backingInt(Scancode.mute)),
-    volumeup = SCANCODE_TO_KEYCODE(@backingInt(Scancode.volumeup)),
-    volumedown = SCANCODE_TO_KEYCODE(@backingInt(Scancode.volumedown)),
-    kp_comma = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_comma)),
-    kp_equalsas400 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_equalsas400)),
-    alterase = SCANCODE_TO_KEYCODE(@backingInt(Scancode.alterase)),
-    sysreq = SCANCODE_TO_KEYCODE(@backingInt(Scancode.sysreq)),
-    cancel = SCANCODE_TO_KEYCODE(@backingInt(Scancode.cancel)),
-    clear = SCANCODE_TO_KEYCODE(@backingInt(Scancode.clear)),
-    prior = SCANCODE_TO_KEYCODE(@backingInt(Scancode.prior)),
-    return2 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.return2)),
-    separator = SCANCODE_TO_KEYCODE(@backingInt(Scancode.separator)),
-    out = SCANCODE_TO_KEYCODE(@backingInt(Scancode.out)),
-    oper = SCANCODE_TO_KEYCODE(@backingInt(Scancode.oper)),
-    clearagain = SCANCODE_TO_KEYCODE(@backingInt(Scancode.clearagain)),
-    crsel = SCANCODE_TO_KEYCODE(@backingInt(Scancode.crsel)),
-    exsel = SCANCODE_TO_KEYCODE(@backingInt(Scancode.exsel)),
-    kp_00 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_00)),
-    kp_000 = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_000)),
-    thousandsseparator = SCANCODE_TO_KEYCODE(@backingInt(Scancode.thousandsseparator)),
-    decimalseparator = SCANCODE_TO_KEYCODE(@backingInt(Scancode.decimalseparator)),
-    currencyunit = SCANCODE_TO_KEYCODE(@backingInt(Scancode.currencyunit)),
-    currencysubunit = SCANCODE_TO_KEYCODE(@backingInt(Scancode.currencysubunit)),
-    kp_leftparen = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_leftparen)),
-    kp_rightparen = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_rightparen)),
-    kp_leftbrace = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_leftbrace)),
-    kp_rightbrace = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_rightbrace)),
-    kp_tab = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_tab)),
-    kp_backspace = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_backspace)),
-    kp_a = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_a)),
-    kp_b = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_b)),
-    kp_c = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_c)),
-    kp_d = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_d)),
-    kp_e = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_e)),
-    kp_f = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_f)),
-    kp_xor = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_xor)),
-    kp_power = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_power)),
-    kp_percent = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_percent)),
-    kp_less = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_less)),
-    kp_greater = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_greater)),
-    kp_ampersand = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_ampersand)),
-    kp_dblampersand = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_dblampersand)),
-    kp_verticalbar = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_verticalbar)),
-    kp_dblverticalbar = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_dblverticalbar)),
-    kp_colon = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_colon)),
-    kp_hash = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_hash)),
-    kp_space = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_space)),
-    kp_at = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_at)),
-    kp_exclam = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_exclam)),
-    kp_memstore = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_memstore)),
-    kp_memrecall = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_memrecall)),
-    kp_memclear = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_memclear)),
-    kp_memadd = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_memadd)),
-    kp_memsubtract = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_memsubtract)),
-    kp_memmultiply = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_memmultiply)),
-    kp_memdivide = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_memdivide)),
-    kp_plusminus = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_plusminus)),
-    kp_clear = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_clear)),
-    kp_clearentry = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_clearentry)),
-    kp_binary = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_binary)),
-    kp_octal = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_octal)),
-    kp_decimal = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_decimal)),
-    kp_hexadecimal = SCANCODE_TO_KEYCODE(@backingInt(Scancode.kp_hexadecimal)),
-    lctrl = SCANCODE_TO_KEYCODE(@backingInt(Scancode.lctrl)),
-    lshift = SCANCODE_TO_KEYCODE(@backingInt(Scancode.lshift)),
-    lalt = SCANCODE_TO_KEYCODE(@backingInt(Scancode.lalt)),
-    lgui = SCANCODE_TO_KEYCODE(@backingInt(Scancode.lgui)),
-    rctrl = SCANCODE_TO_KEYCODE(@backingInt(Scancode.rctrl)),
-    rshift = SCANCODE_TO_KEYCODE(@backingInt(Scancode.rshift)),
-    ralt = SCANCODE_TO_KEYCODE(@backingInt(Scancode.ralt)),
-    rgui = SCANCODE_TO_KEYCODE(@backingInt(Scancode.rgui)),
-    mode = SCANCODE_TO_KEYCODE(@backingInt(Scancode.mode)),
-    sleep = SCANCODE_TO_KEYCODE(@backingInt(Scancode.sleep)),
-    wake = SCANCODE_TO_KEYCODE(@backingInt(Scancode.wake)),
-    channel_increment = SCANCODE_TO_KEYCODE(@backingInt(Scancode.channel_increment)),
-    channel_decrement = SCANCODE_TO_KEYCODE(@backingInt(Scancode.channel_decrement)),
-    media_play = SCANCODE_TO_KEYCODE(@backingInt(Scancode.media_play)),
-    media_pause = SCANCODE_TO_KEYCODE(@backingInt(Scancode.media_pause)),
-    media_record = SCANCODE_TO_KEYCODE(@backingInt(Scancode.media_record)),
-    media_fast_forward = SCANCODE_TO_KEYCODE(@backingInt(Scancode.media_fast_forward)),
-    media_rewind = SCANCODE_TO_KEYCODE(@backingInt(Scancode.media_rewind)),
-    media_next_track = SCANCODE_TO_KEYCODE(@backingInt(Scancode.media_next_track)),
-    media_previous_track = SCANCODE_TO_KEYCODE(@backingInt(Scancode.media_previous_track)),
-    media_stop = SCANCODE_TO_KEYCODE(@backingInt(Scancode.media_stop)),
-    media_eject = SCANCODE_TO_KEYCODE(@backingInt(Scancode.media_eject)),
-    media_play_pause = SCANCODE_TO_KEYCODE(@backingInt(Scancode.media_play_pause)),
-    media_select = SCANCODE_TO_KEYCODE(@backingInt(Scancode.media_select)),
-    ac_new = SCANCODE_TO_KEYCODE(@backingInt(Scancode.ac_new)),
-    ac_open = SCANCODE_TO_KEYCODE(@backingInt(Scancode.ac_open)),
-    ac_close = SCANCODE_TO_KEYCODE(@backingInt(Scancode.ac_close)),
-    ac_exit = SCANCODE_TO_KEYCODE(@backingInt(Scancode.ac_exit)),
-    ac_save = SCANCODE_TO_KEYCODE(@backingInt(Scancode.ac_save)),
-    ac_print = SCANCODE_TO_KEYCODE(@backingInt(Scancode.ac_print)),
-    ac_properties = SCANCODE_TO_KEYCODE(@backingInt(Scancode.ac_properties)),
-    ac_search = SCANCODE_TO_KEYCODE(@backingInt(Scancode.ac_search)),
-    ac_home = SCANCODE_TO_KEYCODE(@backingInt(Scancode.ac_home)),
-    ac_back = SCANCODE_TO_KEYCODE(@backingInt(Scancode.ac_back)),
-    ac_forward = SCANCODE_TO_KEYCODE(@backingInt(Scancode.ac_forward)),
-    ac_stop = SCANCODE_TO_KEYCODE(@backingInt(Scancode.ac_stop)),
-    ac_refresh = SCANCODE_TO_KEYCODE(@backingInt(Scancode.ac_refresh)),
-    ac_bookmarks = SCANCODE_TO_KEYCODE(@backingInt(Scancode.ac_bookmarks)),
-    softleft = SCANCODE_TO_KEYCODE(@backingInt(Scancode.softleft)),
-    softright = SCANCODE_TO_KEYCODE(@backingInt(Scancode.softright)),
-    call = SCANCODE_TO_KEYCODE(@backingInt(Scancode.call)),
-    endcall = SCANCODE_TO_KEYCODE(@backingInt(Scancode.endcall)),
-    left_tab = 0x20000001,
-    level5_shift = 0x20000002,
-    multi_key_compose = 0x20000003,
-    lmeta = 0x20000004,
-    rmeta = 0x20000005,
-    lhyper = 0x20000006,
-    rhyper = 0x20000007,
-    _,
-};
-
-/// Valid key modifiers (possibly OR'd together).
-pub const Keymod = enum(u16) {
-    pub const none: u16 = 0x0000;
-    pub const lshift: u16 = 0x0001;
-    pub const rshift: u16 = 0x0002;
-    pub const level5: u16 = 0x0004;
-    pub const lctrl: u16 = 0x0040;
-    pub const rctrl: u16 = 0x0080;
-    pub const lalt: u16 = 0x0100;
-    pub const ralt: u16 = 0x0200;
-    pub const lgui: u16 = 0x0400;
-    pub const rgui: u16 = 0x0800;
-    pub const num: u16 = 0x1000;
-    pub const caps: u16 = 0x2000;
-    pub const mode: u16 = 0x4000;
-    pub const scroll: u16 = 0x8000;
-    pub const ctrl: u16 = lctrl | rctrl;
-    pub const shift: u16 = lshift | rshift;
-    pub const alt: u16 = lalt | ralt;
-    pub const gui: u16 = lgui | rgui;
-    _,
-};
-
-// TODO
-// - SDL_ResetKeyboard
-// - SDL_GetModState
-// - SDL_SetModState
-// - SDL_GetKeyFromScancode
-// - SDL_GetScancodeFromKey
-// - SDL_SetScancodeName
-// - SDL_GetScancodeName
-// - SDL_GetScancodeFromName
-// - SDL_GetKeyName
-// - SDL_GetKeyFromName
-// - SDL_StartTextInput
-
-pub const TextInputType = enum(c_int) {
-    text,
-    text_name,
-    text_email,
-    text_username,
-    text_password_hidden,
-    text_password_visible,
-    number,
-    number_password_hidden,
-    number_password_visible,
-};
-
-pub const Capitalization = enum(c_int) {
-    none,
-    sentences,
-    words,
-    letters,
-};
-
-// TODO
-// - SDL_StartTextInputWithProperties
-// - SDL_PROP_TEXTINPUT_ constants
-// - SDL_TextInputActive
-// - SDL_StopTextInput
-// - SDL_ClearComposition
-// - SDL_SetTextInputArea
-// - SDL_GetTextInputArea
-// - SDL_HasScreenKeyboardSupport
-// - SDL_ScreenKeyboardShown
+const keycode_h = @import("sdl3/keycode.zig");
+pub const Keycode = keycode_h.Keycode;
+pub const Keymod = keycode_h.Keymod;
+pub const TextInputType = keycode_h.TextInputType;
+pub const Capitalization = keycode_h.Capitalization;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Mouse Support (SDL_mouse.h)
-//
 //--------------------------------------------------------------------------------------------------
-
-/// This is a unique ID for a mouse for the time it is connected to the system,
-/// and is never reused for the lifetime of the application.
-///
-/// If the mouse is disconnected and reconnected, it will get a new ID.
-///
-/// The value 0 is an invalid ID.
-pub const MouseId = enum(u32) { invalid = 0, _ };
-
-/// The structure used to identify an SDL cursor.
-///
-/// This is opaque data.
-pub const Cursor = opaque {};
-
-/// Cursor types for `createSystemCursor`.
-pub const SystemCursor = enum(c_int) {
-    default,
-    text,
-    wait,
-    crosshair,
-    progress,
-    nwse_resize,
-    nesw_resize,
-    ew_resize,
-    ns_resize,
-    move,
-    not_allowed,
-    pointer,
-    nw_resize,
-    n_resize,
-    ne_resize,
-    e_resize,
-    se_resize,
-    s_resize,
-    sw_resize,
-    w_resize,
-};
-
-/// Scroll direction types for the Scroll event
-pub const MouseWheelDirection = enum(u32) {
-    normal,
-    flipped,
-};
-
-/// A bitmask of pressed mouse buttons, as reported by `getMouseState`, etc.
-pub const MouseButtonFlags = packed struct(u32) {
-    left: u1 = 0,
-    middle: u1 = 0,
-    right: u1 = 0,
-    x1: u1 = 0,
-    x2: u1 = 0,
-    _: u27 = undefined,
-};
-
-/// Return whether a mouse is currently connected.
-pub const hasMouse = SDL_HasMouse;
-extern fn SDL_HasMouse() bool;
-
-/// Get a list of currently connected mice.
-///
-/// Note that this will include any device or virtual driver that includes
-/// mouse functionality, including some game controllers, KVM switches, etc.
-/// You should wait for input from a device before you consider it actively in
-/// use.
-pub fn getMice() Error![]MouseId {
-    var count: c_int = undefined;
-    const mice = SDL_GetMice(&count) orelse return Error.SdlError;
-    return mice[0..@intCast(count)];
-}
-extern fn SDL_GetMice(count: ?*c_int) ?[*]MouseId;
-
-/// Get the name of a mouse.
-///
-/// This function returns "" if the mouse doesn't have a name.
-pub fn getMouseNameForId(instance_id: MouseId) ?[*:0]const u8 {
-    const name = SDL_GetMouseNameForID(instance_id) orelse return null;
-    return std.mem.span(name);
-}
-extern fn SDL_GetMouseNameForID(instance_id: MouseId) ?[*:0]const u8;
-
-/// Get the window which currently has mouse focus.
-pub const getMouseFocus = SDL_GetMouseFocus;
-extern fn SDL_GetMouseFocus() ?*Window;
-
-/// Query SDL's cache for the synchronous mouse button state and the
-/// window-relative SDL-cursor position.
-///
-/// This function returns the cached synchronous state as SDL understands it
-/// from the last pump of the event queue.
-///
-/// To query the platform for immediate asynchronous state, use
-/// `getGlobalMouseState`.
-///
-/// Passing non-NULL pointers to `x` or `y` will write the destination with
-/// respective x or y coordinates relative to the focused window.
-///
-/// In Relative Mode, the SDL-cursor's position usually contradicts the
-/// platform-cursor's position as manually calculated from
-/// `getGlobalMouseState` and `getWindowPosition`.
-pub const getMouseState = SDL_GetMouseState;
-extern fn SDL_GetMouseState(x: ?*f32, y: ?*f32) u32;
-
-/// Query the platform for the asynchronous mouse button state and the
-/// desktop-relative platform-cursor position.
-///
-/// This function immediately queries the platform for the most recent
-/// asynchronous state, more costly than retrieving SDL's cached state in
-/// `getMouseState`.
-///
-/// Passing non-NULL pointers to `x` or `y` will write the destination with
-/// respective x or y coordinates relative to the desktop.
-///
-/// In Relative Mode, the platform-cursor's position usually contradicts the
-/// SDL-cursor's position as manually calculated from `getMouseState` and
-/// `getWindowPosition`.
-///
-/// This function can be useful if you need to track the mouse outside of a
-/// specific window and `captureMouse` doesn't fit your needs. For example,
-/// it could be useful if you need to track the mouse while dragging a window,
-/// where coordinates relative to a window might not be in sync at all times.
-pub const getGlobalMouseState = SDL_GetGlobalMouseState;
-extern fn SDL_GetGlobalMouseState(x: ?*f32, y: ?*f32) u32;
-
-/// Query SDL's cache for the synchronous mouse button state and accumulated
-/// mouse delta since last call.
-///
-/// This function returns the cached synchronous state as SDL understands it
-/// from the last pump of the event queue.
-///
-/// To query the platform for immediate asynchronous state, use
-/// `getGlobalMouseState`.
-///
-/// Passing non-NULL pointers to `x` or `y` will write the destination with
-/// respective x or y deltas accumulated since the last call to this function
-/// (or since event initialization).
-///
-/// This function is useful for reducing overhead by processing relative mouse
-/// inputs in one go per-frame instead of individually per-event, at the
-/// expense of losing the order between events within the frame (e.g. quickly
-/// pressing and releasing a button within the same frame).
-pub const getRelativeMouseState = SDL_GetRelativeMouseState;
-extern fn SDL_GetRelativeMouseState(x: ?*f32, y: ?*f32) u32;
-
-/// Move the mouse cursor to the given position within the window.
-///
-/// This function generates a mouse motion event if relative mode is not
-/// enabled. If relative mode is enabled, you can force mouse events for the
-/// warp by setting the SDL_HINT_MOUSE_RELATIVE_WARP_MOTION hint.
-///
-/// Note that this function will appear to succeed, but not actually move the
-/// mouse when used over Microsoft Remote Desktop.
-pub const warpMouseInWindow = SDL_WarpMouseInWindow;
-extern fn SDL_WarpMouseInWindow(window: ?*Window, x: f32, y: f32) void;
-
-/// Move the mouse to the given position in global screen space.
-///
-/// This function generates a mouse motion event.
-///
-/// A failure of this function usually means that it is unsupported by a
-/// platform.
-///
-/// Note that this function will appear to succeed, but not actually move the
-/// mouse when used over Microsoft Remote Desktop.
-pub fn warpMouseGlobal(x: f32, y: f32) Error!void {
-    if (!SDL_WarpMouseGlobal(x, y)) return makeError();
-}
-extern fn SDL_WarpMouseGlobal(x: f32, y: f32) bool;
-
-/// Set relative mouse mode for a window.
-///
-/// While the window has focus and relative mouse mode is enabled, the cursor
-/// is hidden, the mouse position is constrained to the window, and SDL will
-/// report continuous relative mouse motion even if the mouse is at the edge of
-/// the window.
-///
-/// If you'd like to keep the mouse position fixed while in relative mode you
-/// can use `setWindowMouseRect`. If you'd like the cursor to be at a
-/// specific location when relative mode ends, you should use
-/// `warpMouseInWindow` before disabling relative mode.
-///
-/// This function will flush any pending mouse motion for this window.
-pub fn setWindowRelativeMouseMode(window: ?*Window, enabled: bool) Error!void {
-    if (!SDL_SetWindowRelativeMouseMode(window, enabled)) return makeError();
-}
-extern fn SDL_SetWindowRelativeMouseMode(window: ?*Window, enabled: bool) bool;
-
-/// Query whether relative mouse mode is enabled for a window.
-pub const getWindowRelativeMouseMode = SDL_GetWindowRelativeMouseMode;
-extern fn SDL_GetWindowRelativeMouseMode(window: ?*Window) bool;
-
-/// Capture the mouse and to track input outside an SDL window.
-///
-/// Capturing enables your app to obtain mouse events globally, instead of just
-/// within your window. Not all video targets support this function. When
-/// capturing is enabled, the current window will get all mouse events, but
-/// unlike relative mode, no change is made to the cursor and it is not
-/// restrained to your window.
-///
-/// This function may also deny mouse input to other windows--both those in
-/// your application and others on the system--so you should use this function
-/// sparingly, and in small bursts. For example, you might want to track the
-/// mouse while the user is dragging something, until the user releases a mouse
-/// button. It is not recommended that you capture the mouse for long periods
-/// of time, such as the entire time your app is running. For that, you should
-/// probably use `setWindowRelativeMouseMode` or `setWindowMouseGrab`,
-/// depending on your goals.
-///
-/// While captured, mouse events still report coordinates relative to the
-/// current (foreground) window, but those coordinates may be outside the
-/// bounds of the window (including negative values). Capturing is only allowed
-/// for the foreground window. If the window loses focus while capturing, the
-/// capture will be disabled automatically.
-///
-/// While capturing is enabled, the current window will have the
-/// `SDL_WINDOW_MOUSE_CAPTURE` flag set.
-///
-/// Please note that SDL will attempt to "auto capture" the mouse while the
-/// user is pressing a button; this is to try and make mouse behavior more
-/// consistent between platforms, and deal with the common case of a user
-/// dragging the mouse outside of the window. This means that if you are
-/// calling `captureMouse` only to deal with this situation, you do not
-/// have to (although it is safe to do so). If this causes problems for your
-/// app, you can disable auto capture by setting the
-/// `SDL_HINT_MOUSE_AUTO_CAPTURE` hint to zero.
-pub fn captureMouse(enabled: bool) Error!void {
-    if (!SDL_CaptureMouse(enabled)) return makeError();
-}
-extern fn SDL_CaptureMouse(enabled: bool) bool;
-
-/// Create a cursor using the specified bitmap data and mask (in MSB format).
-///
-/// `mask` has to be in MSB (Most Significant Bit) format.
-///
-/// The cursor width (`w`) must be a multiple of 8 bits.
-///
-/// The cursor is created in black and white according to the following:
-///
-/// - data=0, mask=1: white
-/// - data=1, mask=1: black
-/// - data=0, mask=0: transparent
-/// - data=1, mask=0: inverted color if possible, black if not.
-///
-/// Cursors created with this function must be freed with SDL_DestroyCursor().
-///
-/// If you want to have a color cursor, or create your cursor from a
-/// `surface`, you should use `createColorCursor`. Alternately, you can
-/// hide the cursor and draw your own as part of your game's rendering, but it
-/// will be bound to the framerate.
-///
-/// Also, `createSystemCursor` is available, which provides several
-/// readily-available system cursors to pick from.
-pub fn createCursor(
-    data: [*]const u8,
-    mask: [*]const u8,
-    w: c_int,
-    h: c_int,
-    hot_x: c_int,
-    hot_y: c_int,
-) Error!*Cursor {
-    return SDL_CreateCursor(data, mask, w, h, hot_x, hot_y) orelse makeError();
-}
-extern fn SDL_CreateCursor(
-    data: [*]const u8,
-    mask: [*]const u8,
-    w: c_int,
-    h: c_int,
-    hot_x: c_int,
-    hot_y: c_int,
-) ?*Cursor;
-
-/// Create a color cursor.
-///
-/// If this function is passed a surface with alternate representations, the
-/// surface will be interpreted as the content to be used for 100% display
-/// scale, and the alternate representations will be used for high DPI
-/// situations. For example, if the original surface is 32x32, then on a 2x
-/// macOS display or 200% display scale on Windows, a 64x64 version of the
-/// image will be used, if available. If a matching version of the image isn't
-/// available, the closest larger size image will be downscaled to the
-/// appropriate size and be used instead, if available. Otherwise, the closest
-/// smaller image will be upscaled and be used instead.
-pub fn createColorCursor(surface: *Surface, hot_x: c_int, hot_y: c_int) Error!*Cursor {
-    return SDL_CreateColorCursor(surface, hot_x, hot_y) orelse makeError();
-}
-extern fn SDL_CreateColorCursor(surface: *Surface, hot_x: c_int, hot_y: c_int) ?*Cursor;
-
-/// Create a system cursor.
-pub fn createSystemCursor(id: SystemCursor) Error!*Cursor {
-    return SDL_CreateSystemCursor(id) orelse makeError();
-}
-extern fn SDL_CreateSystemCursor(id: SystemCursor) ?*Cursor;
-
-/// Set the active cursor.
-///
-/// This function sets the currently active cursor to the specified one. If the
-/// cursor is currently visible, the change will be immediately represented on
-/// the display. `setCursor(null)` can be used to force cursor redraw, if
-/// this is desired for any reason.
-pub fn setCursor(cursor: *Cursor) Error!void {
-    if (!SDL_SetCursor(cursor)) return makeError();
-}
-extern fn SDL_SetCursor(cursor: *Cursor) bool;
-
-/// Get the active cursor.
-///
-/// This function returns a pointer to the current cursor which is owned by the
-/// library. It is not necessary to free the cursor with `destroyCursor`.
-pub fn getCursor() Error!*Cursor {
-    return SDL_GetCursor() orelse makeError();
-}
-extern fn SDL_GetCursor() ?*Cursor;
-
-/// Get the default cursor.
-///
-/// You do not have to call `destroyCursor` on the return value, but it is
-/// safe to do so.
-pub fn getDefaultCursor() Error!*Cursor {
-    return SDL_GetDefaultCursor() orelse makeError();
-}
-extern fn SDL_GetDefaultCursor() ?*Cursor;
-
-/// Free a previously-created cursor.
-///
-/// Use this function to free cursor resources created with `createCursor`,
-/// `createColorCursor` or `createSystemCursor`.
-pub const destroyCursor = SDL_DestroyCursor;
-extern fn SDL_DestroyCursor(cursor: *Cursor) void;
-
-/// Show the cursor.
-pub fn showCursor() Error!void {
-    if (!SDL_ShowCursor()) return makeError();
-}
-extern fn SDL_ShowCursor() bool;
-
-/// Hide the cursor.
-pub fn hideCursor() Error!void {
-    if (!SDL_HideCursor()) return makeError();
-}
-extern fn SDL_HideCursor() bool;
-
-/// Return whether the cursor is currently being shown.
-pub const cursorVisible = SDL_CursorVisible;
-extern fn SDL_CursorVisible() bool;
+const mouse_h = @import("sdl3/mouse.zig");
+pub const MouseId = mouse_h.MouseId;
+pub const Cursor = mouse_h.Cursor;
+pub const SystemCursor = mouse_h.SystemCursor;
+pub const MouseWheelDirection = mouse_h.MouseWheelDirection;
+pub const MouseButtonFlags = mouse_h.MouseButtonFlags;
+pub const hasMouse = mouse_h.hasMouse;
+pub const getMice = mouse_h.getMice;
+pub const getMouseNameForId = mouse_h.getMouseNameForId;
+pub const getMouseFocus = mouse_h.getMouseFocus;
+pub const getMouseState = mouse_h.getMouseState;
+pub const getGlobalMouseState = mouse_h.getGlobalMouseState;
+pub const getRelativeMouseState = mouse_h.getRelativeMouseState;
+pub const warpMouseInWindow = mouse_h.warpMouseInWindow;
+pub const warpMouseGlobal = mouse_h.warpMouseGlobal;
+pub const setWindowRelativeMouseMode = mouse_h.setWindowRelativeMouseMode;
+pub const getWindowRelativeMouseMode = mouse_h.getWindowRelativeMouseMode;
+pub const captureMouse = mouse_h.captureMouse;
+pub const createCursor = mouse_h.createCursor;
+pub const createColorCursor = mouse_h.createColorCursor;
+pub const createSystemCursor = mouse_h.createSystemCursor;
+pub const setCursor = mouse_h.setCursor;
+pub const getCursor = mouse_h.getCursor;
+pub const getDefaultCursor = mouse_h.getDefaultCursor;
+pub const destroyCursor = mouse_h.destroyCursor;
+pub const showCursor = mouse_h.showCursor;
+pub const hideCursor = mouse_h.hideCursor;
+pub const cursorVisible = mouse_h.cursorVisible;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Joystick Support (SDL_joystick.h)
-//
 //--------------------------------------------------------------------------------------------------
-
-pub const Joystick = struct {
-    pub const Id = enum(u32) { invalid = 0, _ };
-
-    pub const Type = enum(c_int) {
-        unknown,
-        gamepad,
-        wheel,
-        arcade_stick,
-        flight_stick,
-        dance_pad,
-        guitar,
-        drum_kit,
-        arcade_pad,
-        throttle,
-    };
-
-    pub const ConnectionState = enum(c_int) {
-        invalid = -1,
-        unknown,
-        wired,
-        wireless,
-    };
-
-    pub const JOYSTICK_AXIS_MAX = 32767;
-    pub const JOYSTICK_AXIS_MIN = -32768;
-};
-
-// TODO: Joystick API (see SDL_joystick.h)
+const joystick_h = @import("sdl3/joystick.zig");
+pub const Joystick = joystick_h.Joystick;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Gamepad Support (SDL_gamepad.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const Gamepad = opaque {
-    pub const Type = enum(c_int) {
-        unknown,
-        standard,
-        xbox360,
-        xboxone,
-        ps3,
-        ps4,
-        ps5,
-        nintendo_switch_pro,
-        nintendo_switch_joycon_left,
-        nintendo_switch_joycon_right,
-        nintendo_switch_joycon_pair,
-    };
-
-    pub const Button = enum(c_int) {
-        invalid = -1,
-        south,
-        east,
-        west,
-        north,
-        back,
-        guide,
-        start,
-        left_stick,
-        right_stick,
-        left_shoulder,
-        right_shoulder,
-        dpad_up,
-        dpad_down,
-        dpad_left,
-        dpad_right,
-        misc1,
-        right_paddle1,
-        left_paddle1,
-        right_paddle2,
-        left_paddle2,
-        touchpad,
-        misc2,
-        misc3,
-        misc4,
-        misc5,
-        misc6,
-    };
-
-    pub const ButtonLabel = enum(c_int) {
-        unknown,
-        label_a,
-        label_b,
-        label_x,
-        label_y,
-        label_cross,
-        label_circle,
-        label_square,
-        label_triangle,
-    };
-
-    pub const Axis = enum(c_int) {
-        invalid = -1,
-        leftx,
-        lefty,
-        rightx,
-        righty,
-        left_trigger,
-        right_trigger,
-    };
-
-    pub const BindingType = enum(c_int) {
-        none,
-        button,
-        axis,
-        hat,
-    };
-
-    /// A mapping between one joystick input to a gamepad control.
-    ///
-    /// A gamepad has a collection of several bindings, to say, for example, when
-    /// joystick button number 5 is pressed, that should be treated like the
-    /// gamepad's "start" button.
-    ///
-    /// SDL has these bindings built-in for many popular controllers, and can add
-    /// more with a simple text string. Those strings are parsed into a collection
-    /// of these structs to make it easier to operate on the data.
-    pub const Binding = extern struct {
-        input_type: BindingType,
-        input: extern union {
-            button: Button,
-            axis: extern struct {
-                axis: Axis,
-                axis_min: c_int,
-                axis_max: c_int,
-            },
-            hat: extern struct {
-                hat: c_int,
-                hat_mask: c_int,
-            },
-        },
-        output_type: BindingType,
-        output: extern union {
-            button: Button,
-            axis: extern struct {
-                axis: Axis,
-                axis_min: c_int,
-                axis_max: c_int,
-            },
-        },
-    };
-
-    pub const close = closeGamepad;
-    pub const getAxis = getGamepadAxis;
-    pub const getButton = getGamepadButton;
-};
-
-// TODO
-// - SDL_AddGamepadMapping
-// - SDL_AddGamepadMappingsFromIO
-// - SDL_AddGamepadMappingsFromFile
-// - SDL_ReloadGamepadMappings
-// - SDL_GetGamepadMappings
-// - SDL_GetGamepadMappingForGUID
-// - SDL_GetGamepadMapping
-// - SDL_SetGamepadMapping
-// - SDL_HasGamepad
-// - SDL_GetGamepads
-// - SDL_IsGamepad
-// - SDL_GetGamepadNameForID
-// - SDL_GetGamepadPathForID
-// - SDL_GetGamepadPlayerIndexForID
-// - SDL_GetGamepadGUIDForID
-// - SDL_GetGamepadVendorForID
-// - SDL_GetGamepadProductForID
-// - SDL_GetGamepadProductVersionForID
-// - SDL_GetGamepadTypeForID
-// - SDL_GetRealGamepadTypeForID
-// - SDL_GetGamepadMappingForID
-
-pub const openGamepad = SDL_OpenGamepad;
-extern fn SDL_OpenGamepad(joystick_index: Joystick.Id) ?*Gamepad;
-
-// TODO
-// - SDL_GetGamepadFromID
-// - SDL_GetGamepadFromPlayerIndex
-// - SDL_GetGamepadProperties
-// - SDL_GetGamepadID
-// - SDL_GetGamepadName
-// - SDL_GetGamepadPath
-// - SDL_GetGamepadType
-// - SDL_GetRealGamepadType
-// - SDL_GetGamepadPlayerIndex
-// - SDL_SetGamepadPlayerIndex
-// - SDL_GetGamepadVendor
-// - SDL_GetGamepadProduct
-// - SDL_GetGamepadProductVersion
-// - SDL_GetGamepadSerial
-// - SDL_GetGamepadSteamHandle
-// - SDL_GetGamepadConnectionState
-// - SDL_GetGamepadPowerInfo
-// - SDL_GamepadConnected
-// - SDL_GetGamepadJoystick
-// - SDL_SetGamepadEventsEnabled
-// - SDL_GamepadEventsEnabled
-// - SDL_GetGamepadBindings
-// - SDL_UpdateGamepads
-// - SDL_GetGamepadTypeFromString
-// - SDL_GetGamepadStringForType
-// - SDL_GetGamepadAxisFromString
-// - SDL_GetGamepadStringForAxis
-// - SDL_GamepadHasAxis
-
-pub const getGamepadAxis = SDL_GetGamepadAxis;
-extern fn SDL_GetGamepadAxis(*Gamepad, axis: Gamepad.Axis) i16;
-
-// TODO
-// - SDL_GetGamepadButtonFromString
-// - SDL_GetGamepadStringForButton
-// - SDL_GamepadHasButton
-// - SDL_GetGamepadButton
-
-pub const getGamepadButton = SDL_GetGamepadButton;
-extern fn SDL_GetGamepadButton(*Gamepad, Gamepad.Button) bool;
-
-// TODO
-// - SDL_GetGamepadButtonLabelForType
-// - SDL_GetGamepadButtonLabel
-// - SDL_GetNumGamepadTouchpads
-// - SDL_GetNumGamepadTouchpadFingers
-// - SDL_GetGamepadTouchpadFinger
-// - SDL_GamepadHasSensor
-// - SDL_SetGamepadSensorEnabled
-// - SDL_GamepadSensorEnabled
-// - SDL_GetGamepadSensorDataRate
-// - SDL_GetGamepadSensorData
-// - SDL_RumbleGamepad
-// - SDL_RumbleGamepadTriggers
-// - SDL_SetGamepadLED
-// - SDL_SendGamepadEffect
-
-pub const closeGamepad = SDL_CloseGamepad;
-extern fn SDL_CloseGamepad(joystick: *Gamepad) void;
+const gamepad_h = @import("sdl3/gamepad.zig");
+pub const Gamepad = gamepad_h.Gamepad;
+pub const openGamepad = gamepad_h.openGamepad;
+pub const getGamepadAxis = gamepad_h.getGamepadAxis;
+pub const getGamepadButton = gamepad_h.getGamepadButton;
+pub const closeGamepad = gamepad_h.closeGamepad;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Touch Support (SDL_touch.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const TouchId = u64;
-
-pub const FingerId = u64;
-
-pub const TouchDeviceType = enum(c_int) {
-    invalid = -1,
-    direct,
-    indirect_absolute,
-    indirect_relative,
-};
-
-pub const Finger = extern struct {
-    id: FingerId,
-    x: f32,
-    y: f32,
-    pressure: f32,
-};
-
-pub const TOUCH_MOUSEID: c_int = -1;
-
-pub const MOUSE_TOUCHID: c_int = -1;
-
-// TODO
-// - SDL_GetTouchDevices
-// - SDL_GetTouchDeviceName
-// - SDL_GetTouchDeviceType
-// - SDL_GetTouchFingers
+const touch_h = @import("sdl3/touch.zig");
+pub const TouchId = touch_h.TouchId;
+pub const FingerId = touch_h.FingerId;
+pub const TouchDeviceType = touch_h.TouchDeviceType;
+pub const Finger = touch_h.Finger;
+pub const TOUCH_MOUSEID = touch_h.TOUCH_MOUSEID;
+pub const MOUSE_TOUCHID = touch_h.MOUSE_TOUCHID;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Pen Support (SDL_pen.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const PenId = enum(u32) { invalid = 0, _ };
-
-pub const PEN_MOUSEID: c_int = -2;
-
-pub const PEN_TOUCHID: c_int = -2;
-
-pub const PenInputFlags = packed struct(u32) {
-    down: u1,
-    button_1: u1,
-    button_2: u1,
-    button_3: u1,
-    button_4: u1,
-    button_5: u1,
-    _: u25,
-    eraser_tip: u1,
-};
-
-pub const PEN_INPUT_DOWN: u32 = @as(u32, 1) << 0;
-pub const PEN_INPUT_BUTTON_1: u32 = @as(u32, 1) << 1;
-pub const PEN_INPUT_BUTTON_2: u32 = @as(u32, 1) << 2;
-pub const PEN_INPUT_BUTTON_3: u32 = @as(u32, 1) << 3;
-pub const PEN_INPUT_BUTTON_4: u32 = @as(u32, 1) << 4;
-pub const PEN_INPUT_BUTTON_5: u32 = @as(u32, 1) << 5;
-pub const PEN_INPUT_ERASER_TIP: u32 = @as(u32, 1) << 30;
-
-pub const PenAxis = enum(c_int) {
-    pressure,
-    xtilt,
-    ytilt,
-    distance,
-    rotation,
-    slider,
-    tangential_pressure,
-};
+const pen_h = @import("sdl3/pen.zig");
+pub const PenId = pen_h.PenId;
+pub const PEN_MOUSEID = pen_h.PEN_MOUSEID;
+pub const PEN_TOUCHID = pen_h.PEN_TOUCHID;
+pub const PenInputFlags = pen_h.PenInputFlags;
+pub const PEN_INPUT_DOWN = pen_h.PEN_INPUT_DOWN;
+pub const PEN_INPUT_BUTTON_1 = pen_h.PEN_INPUT_BUTTON_1;
+pub const PEN_INPUT_BUTTON_2 = pen_h.PEN_INPUT_BUTTON_2;
+pub const PEN_INPUT_BUTTON_3 = pen_h.PEN_INPUT_BUTTON_3;
+pub const PEN_INPUT_BUTTON_4 = pen_h.PEN_INPUT_BUTTON_4;
+pub const PEN_INPUT_BUTTON_5 = pen_h.PEN_INPUT_BUTTON_5;
+pub const PEN_INPUT_ERASER_TIP = pen_h.PEN_INPUT_ERASER_TIP;
+pub const PenAxis = pen_h.PenAxis;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Sensors (SDL_sensor.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const Sensor = opaque {};
-
-pub const SensorId = enum(u32) { invalid = 0, _ };
-
-// TODO: Sensor API
+const sensor_h = @import("sdl3/sensor.zig");
+pub const Sensor = sensor_h.Sensor;
+pub const SensorId = sensor_h.SensorId;
 
 //--------------------------------------------------------------------------------------------------
-//
 // HIDAPI (SDL_hidapi.h)
-//
 //--------------------------------------------------------------------------------------------------
-// TODO
+const hidapi_h = @import("sdl3/hidapi.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Force Feedback Support (SDL_haptic.h)
-//
 //--------------------------------------------------------------------------------------------------
-// TODO
+const haptic_h = @import("sdl3/haptic.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Audio Device Management, Playing and Recording (SDL_audio.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const AUDIO_MASK_BITSIZE = @as(c_uint, 0xff);
-pub const AUDIO_MASK_FLOAT = @as(c_uint, 1) << 8;
-pub const AUDIO_MASK_BIG_ENDIAN = @as(c_uint, 1) << 12;
-pub const AUDIO_MASK_SIGNED = @as(c_uint, 1) << 15;
-
-pub const AudioFormat = enum(c_uint) {
-    UNKNOWN = 0x0,
-    U8 = 0x0008,
-    S8 = 0x8008,
-    S16LE = 0x8010,
-    S16BE = 0x9010,
-    S32LE = 0x8020,
-    S32BE = 0x9020,
-    F32LE = 0x8120,
-    F32BE = 0x9120,
-
-    pub const S16 = if (builtin.target.cpu.arch.endian() == .little) AudioFormat.S16LE else AudioFormat.S16BE;
-    pub const S32 = if (builtin.target.cpu.arch.endian() == .little) AudioFormat.S32LE else AudioFormat.S32BE;
-    pub const F32 = if (builtin.target.cpu.arch.endian() == .little) AudioFormat.F32LE else AudioFormat.F32BE;
-};
-
-pub inline fn AUDIO_BITSIZE(format: AudioFormat) c_uint {
-    return @backingInt(format) & AUDIO_MASK_BITSIZE;
-}
-
-pub inline fn AUDIO_BYTESIZE(format: AudioFormat) c_uint {
-    return AUDIO_BITSIZE(@backingInt(format)) / 8;
-}
-
-pub inline fn AUDIO_ISFLOAT(format: AudioFormat) bool {
-    return (@backingInt(format) & AUDIO_MASK_FLOAT) != 0;
-}
-
-pub inline fn AUDIO_ISBIGENDIAN(format: AudioFormat) bool {
-    return (@backingInt(format) & AUDIO_MASK_BIG_ENDIAN) != 0;
-}
-
-pub inline fn AUDIO_ISSIGNED(format: AudioFormat) bool {
-    return (@backingInt(format) & AUDIO_MASK_SIGNED) != 0;
-}
-
-pub inline fn AUDIO_ISINT(format: AudioFormat) bool {
-    return !AUDIO_ISFLOAT(format);
-}
-
-pub inline fn AUDIO_ISLITTLEENDIAN(format: AudioFormat) bool {
-    return !AUDIO_ISBIGENDIAN(format);
-}
-
-pub inline fn AUDIO_ISUNSIGNED(format: AudioFormat) bool {
-    return !AUDIO_ISSIGNED(format);
-}
-
-pub const AudioDeviceId = enum(u32) { invalid = 0, _ };
-
-pub const AUDIO_DEVICE_DEFAULT_PLAYBACK = 0xFFFFFFFF;
-pub const AUDIO_DEVICE_DEFAULT_RECORDING = 0xFFFFFFFE;
-
-pub const AudioSpec = extern struct {
-    channels: u8,
-    format: AudioFormat,
-    freq: c_int,
-};
-
-pub inline fn AUDIO_FRAMESIZE(spec: AudioSpec) c_uint {
-    return AUDIO_BYTESIZE(spec.format) * spec.channels;
-}
-
-pub const AudioStream = opaque {};
-
-/// Use this function to get the number of built-in audio drivers.
-///
-/// This function returns a hardcoded number. This never returns a negative
-/// value; if there are no drivers compiled into this build of SDL, this
-/// function returns zero. The presence of a driver in this list does not mean
-/// it will function, it just means SDL is capable of interacting with that
-/// interface. For example, a build of SDL might have esound support, but if
-/// there's no esound server available, SDL's esound driver would fail if used.
-pub const getNumAudioDrivers = SDL_GetNumAudioDrivers;
-extern fn SDL_GetNumAudioDrivers() c_int;
-
-/// Use this function to get the name of a built in audio driver.
-pub fn getAudioDriver(index: c_int) ?[:0]const u8 {
-    if (SDL_GetAudioDriver(index)) |name| {
-        return std.mem.span(name);
-    } else {
-        return null;
-    }
-}
-extern fn SDL_GetAudioDriver(index: c_int) [*c]const u8;
-
-/// Get the name of the current audio driver.
-pub fn getCurrentAudioDriver() ?[:0]const u8 {
-    if (SDL_GetCurrentAudioDriver()) |name| {
-        return std.mem.span(name);
-    } else {
-        return null;
-    }
-}
-extern fn SDL_GetCurrentAudioDriver() [*c]const u8;
-
-/// Get a list of currently-connected audio playback devices.
-///
-/// This only returns a list of physical devices; it will not have any device
-/// IDs returned by SDL_OpenAudioDevice().
-///
-/// If this function returns NULL, to signify an error, `*count` will be set to  zero.
-///
-/// Returns a 0 terminated array of device instance IDs or NULL on error;
-/// call SDL_free() when it is no longer needed.
-pub fn getAudioPlaybackDevices() Error![]AudioDeviceId {
-    var count: c_int = undefined;
-    const maybe_list = SDL_GetAudioPlaybackDevices(&count);
-    return if (maybe_list) |list| list[0..@intCast(count)] else makeError();
-}
-extern fn SDL_GetAudioPlaybackDevices(out_count: ?*c_int) ?[*]AudioDeviceId;
-
-/// Get a list of currently-connected audio recording devices.
-///
-/// This only returns a list of physical devices; it will not have any device
-/// IDs returned by SDL_OpenAudioDevice().
-///
-/// If this function returns NULL, to signify an error, `*count` will be set to  zero.
-///
-/// Returns a 0 terminated array of device instance IDs or NULL on error;
-/// call SDL_free() when it is no longer needed.
-pub fn getAudioRecordingDevices() Error![]AudioDeviceId {
-    var count: c_int = undefined;
-    const maybe_list = SDL_GetAudioRecordingDevices(&count);
-    return if (maybe_list) |list| list[0..@intCast(count)] else makeError();
-}
-extern fn SDL_GetAudioRecordingDevices(out_count: ?*c_int) ?[*]AudioDeviceId;
-
-/// Get the human-readable name of a specific audio device.
-pub fn getAudioDeviceName(devid: AudioDeviceId) Error![:0]const u8 {
-    if (SDL_GetAudioDeviceName(devid)) |name| {
-        return std.mem.span(name);
-    } else {
-        return makeError();
-    }
-}
-extern fn SDL_GetAudioDeviceName(AudioDeviceId) [*c]const u8;
-
-/// Get the current audio format of a specific audio device.
-pub fn getAudioDeviceFormat(devid: AudioDeviceId) Error!struct { spec: AudioSpec, sample_frames: c_int } {
-    var spec: AudioSpec = undefined;
-    var sample_frames: c_int = undefined;
-    if (!SDL_GetAudioDeviceFormat(devid, &spec, &sample_frames)) {
-        return makeError();
-    }
-    return .{ .spec = spec, .sample_frames = sample_frames };
-}
-extern fn SDL_GetAudioDeviceFormat(AudioDeviceId, out_spec: *AudioSpec, out_sample_frames: *c_int) bool;
-
-/// Get the current audio format of a specific audio device.
-/// Channel maps are optional; most things do not need them, instead passing
-/// data in the [order that SDL expects](CategoryAudio#channel-layouts).
-///
-/// Audio devices usually have no remapping applied. This is represented by
-/// returning NULL, and does not signify an error.
-///
-/// Returns an array of the current channel mapping, with as many elements as
-/// the current output spec's channels, or NULL if default. This
-/// should be freed with SDL_free() when it is no longer needed.
-pub fn getAudioDeviceChannelMap(devid: AudioDeviceId) ?[]c_int {
-    var count: c_int = undefined;
-    return if (SDL_GetAudioDeviceChannelMap(devid, &count)) |list_ptr| list_ptr[0..@intCast(count)] else null;
-}
-extern fn SDL_GetAudioDeviceChannelMap(AudioDeviceId, out_count: *c_int) [*c]c_int;
-
-/// Open a specific audio device.
-pub fn openAudioDevice(device: AudioDeviceId, spec: ?*const AudioSpec) Error!AudioDeviceId {
-    const opened_device_id = SDL_OpenAudioDevice(device, spec);
-    if (opened_device_id == .invalid) {
-        return makeError();
-    }
-    return opened_device_id;
-}
-extern fn SDL_OpenAudioDevice(AudioDeviceId, ?*const AudioSpec) AudioDeviceId;
-
-pub const isAudioDevicePhysical = SDL_IsAudioDevicePhysical;
-extern fn SDL_IsAudioDevicePhysical(AudioDeviceId) bool;
-
-pub const isAudioDevicePlayback = SDL_IsAudioDevicePlayback;
-extern fn SDL_IsAudioDevicePlayback(AudioDeviceId) bool;
-
-/// Use this function to pause audio playback on a specified device.
-///
-/// This function pauses audio processing for a given device. Any bound audio
-/// streams will not progress, and no audio will be generated. Pausing one
-/// device does not prevent other unpaused devices from running.
-///
-/// Unlike in SDL2, audio devices start in an _unpaused_ state, since an app
-/// has to bind a stream before any audio will flow. Pausing a paused device is
-/// a legal no-op.
-///
-/// Pausing a device can be useful to halt all audio without unbinding all the
-/// audio streams. This might be useful while a game is paused, or a level is
-/// loading, etc.
-///
-/// Physical devices can not be paused or unpaused, only logical devices
-/// created through SDL_OpenAudioDevice() can be.
-pub const pauseAudioDevice = SDL_PauseAudioDevice;
-extern fn SDL_PauseAudioDevice(AudioDeviceId) bool;
-
-/// Use this function to unpause audio playback on a specified device.
-///
-/// This function unpauses audio processing for a given device that has
-/// previously been paused with SDL_PauseAudioDevice(). Once unpaused, any
-/// bound audio streams will begin to progress again, and audio can be
-/// generated.
-///
-/// Unlike in SDL2, audio devices start in an _unpaused_ state, since an app
-/// has to bind a stream before any audio will flow. Pausing a paused device is
-/// a legal no-op.
-///
-/// Physical devices can not be paused or unpaused, only logical devices
-/// created through SDL_OpenAudioDevice() can be.
-pub const resumeAudioDevice = SDL_ResumeAudioDevice;
-extern fn SDL_ResumeAudioDevice(AudioDeviceId) bool;
-
-/// Use this function to query if an audio device is paused.
-///
-/// Unlike in SDL2, audio devices start in an _unpaused_ state, since an app
-/// has to bind a stream before any audio will flow. Pausing a paused device is
-/// a legal no-op.
-///
-/// Physical devices can not be paused or unpaused, only logical devices
-/// created through SDL_OpenAudioDevice() can be.
-pub const audioDevicePaused = SDL_AudioDevicePaused;
-extern fn SDL_AudioDevicePaused(AudioDeviceId) bool;
-
-/// Get the gain of an audio device.
-///
-/// Physical devices may not have their gain changed, only logical devices, and
-/// this function will always return -1.0f when used on physical devices.
-pub fn getAudioDeviceGain(device: AudioDeviceId) Error!f32 {
-    const gain = SDL_GetAudioDeviceGain(device);
-    return if (gain == -1.0) makeError() else gain;
-}
-extern fn SDL_GetAudioDeviceGain(AudioDeviceId) f32;
-
-/// Change the gain of an audio device.
-///
-/// Physical devices may not have their gain changed, only logical devices, and
-/// this function will always return false when used on physical devices. While
-/// it might seem attractive to adjust several logical devices at once in this
-/// way, it would allow an app or library to interfere with another portion of
-/// the program's otherwise-isolated devices.
-///
-/// This is applied, along with any per-audiostream gain, during playback to
-/// the hardware, and can be continuously changed to create various effects. On
-/// recording devices, this will adjust the gain before passing the data into
-/// an audiostream; that recording audiostream can then adjust its gain further
-/// when outputting the data elsewhere, if it likes, but that second gain is
-/// not applied until the data leaves the audiostream again.
-pub fn setAudioDeviceGain(device: AudioDeviceId, gain: f32) Error!void {
-    if (!SDL_SetAudioDeviceGain(device, gain)) {
-        return makeError();
-    }
-}
-extern fn SDL_SetAudioDeviceGain(AudioDeviceId, f32) bool;
-
-/// Close a previously-opened audio device.
-///
-/// The application should close open audio devices once they are no longer  needed.
-///
-/// This function may block briefly while pending audio data is played by the
-/// hardware, so that applications don't drop the last buffer of data they
-/// supplied if terminating immediately afterwards.
-pub const closeAudioDevice = SDL_CloseAudioDevice;
-extern fn SDL_CloseAudioDevice(AudioDeviceId) void;
-
-// TODO
-// - SDL_BindAudioStreams
-// - SDL_UnbindAudioStreams
-// - SDL_UnbindAudioStream
-
-/// Query an audio stream for its currently-bound device.
-///
-/// This reports the audio device that an audio stream is currently bound to.
-///
-/// If not bound, or invalid, this returns zero, which is not a valid device ID.
-pub const getAudioStreamDevice = SDL_GetAudioStreamDevice;
-extern fn SDL_GetAudioStreamDevice(*AudioStream) AudioDeviceId;
-
-// TODO
-// - SDL_GetAudioStreamProperties
-// - SDL_GetAudioStreamFormat
-// - SDL_SetAudioStreamFormat
-// - SDL_GetAudioStreamFrequencyRatio
-// - SDL_SetAudioStreamFrequencyRatio
-// - SDL_GetAudioStreamGain
-// - SDL_SetAudioStreamGain
-// - SDL_GetAudioStreamInputChannelMap
-// - SDL_GetAudioStreamOutputChannelMap
-// - SDL_SetAudioStreamInputChannelMap
-// - SDL_SetAudioStreamOutputChannelMap
-
-/// Add data to the stream.
-///
-/// This data must match the format/channels/samplerate specified in the latest
-/// call to SDL_SetAudioStreamFormat, or the format specified when creating the
-/// stream if it hasn't been changed.
-///
-/// Note that this call simply copies the unconverted data for later. This is
-/// different than SDL2, where data was converted during the Put call and the
-/// Get call would just dequeue the previously-converted data.
-pub fn putAudioStreamData(comptime SampleType: type, stream: *AudioStream, data: []const SampleType) Error!void {
-    if (!SDL_PutAudioStreamData(stream, @ptrCast(data.ptr), @intCast(@sizeOf(SampleType) * data.len))) {
-        return makeError();
-    }
-}
-extern fn SDL_PutAudioStreamData(*AudioStream, data: *const anyopaque, len: c_int) bool;
-
-pub const createAudioStream = SDL_CreateAudioStream;
-extern fn SDL_CreateAudioStream(src_spec: *const AudioSpec, dst_spec: ?*const AudioSpec) ?*AudioStream;
-
-/// Bind an audio stream to an audio device.
-///
-/// This binds a single audio stream to the specified audio device. The stream
-/// can then be used to play or record audio.
-pub fn bindAudioStream(devid: AudioDeviceId, stream: *AudioStream) Error!void {
-    if (!SDL_BindAudioStream(devid, stream)) return makeError();
-}
-extern fn SDL_BindAudioStream(devid: AudioDeviceId, stream: *AudioStream) bool;
-
-// TODO
-// - SDL_GetAudioStreamData
-// - SDL_GetAudioStreamAvailable
-
-/// Get the number of bytes currently queued.
-///
-// This is the number of bytes put into a stream as input, not the number that
-// can be retrieved as output. Because of several details, it's not possible
-// to calculate one number directly from the other. If you need to know how
-// much usable data can be retrieved right now, you should use
-// SDL_GetAudioStreamAvailable() and not this function.
-//
-// Note that audio streams can change their input format at any time, even if
-// there is still data queued in a different format, so the returned byte
-// count will not necessarily match the number of _sample frames_ available.
-// Users of this API should be aware of format changes they make when feeding
-// a stream and plan accordingly.
-//
-// Queued data is not converted until it is consumed by
-// SDL_GetAudioStreamData, so this value should be representative of the exact
-// data that was put into the stream.
-//
-// If the stream has so much data that it would overflow an int, the return
-// value is clamped to a maximum value, but no queued data is lost; if there
-// are gigabytes of data queued, the app might need to read some of it with
-// SDL_GetAudioStreamData before this function's return value is no longer
-// clamped.
-pub fn getAudioStreamQueued(stream: *AudioStream) Error!usize {
-    const queued = SDL_GetAudioStreamQueued(stream);
-    if (queued < 0) {
-        return makeError();
-    }
-    return @intCast(queued);
-}
-extern fn SDL_GetAudioStreamQueued(*AudioStream) c_int;
-
-/// Tell the stream that you're done sending data, and anything being buffered
-/// should be converted/resampled and made available immediately.
-///
-/// It is legal to add more data to a stream after flushing, but there may be
-/// audio gaps in the output. Generally this is intended to signal the end of
-/// input, so the complete output becomes available.
-pub fn flushAudioStream(stream: *AudioStream) Error!void {
-    if (!SDL_FlushAudioStream(stream)) {
-        return makeError();
-    }
-}
-extern fn SDL_FlushAudioStream(*AudioStream) bool;
-
-/// Clear any pending data in the stream.
-///
-/// This drops any queued data, so there will be nothing to read from the
-/// stream until more is added.
-pub fn clearAudioStream(stream: *AudioStream) Error!void {
-    if (!SDL_ClearAudioStream(stream)) {
-        return makeError();
-    }
-}
-extern fn SDL_ClearAudioStream(*AudioStream) bool;
-
-// TODO
-// - SDL_PauseAudioStreamDevice
-// - SDL_ResumeAudioStreamDevice
-// - SDL_AudioStreamDevicePaused
-// - SDL_LockAudioStream
-// - SDL_UnlockAudioStream
-
-pub const AudioStreamCallback = *const fn (
-    userdata: ?*anyopaque,
-    stream: ?*AudioStream,
-    additional_amount: c_int,
-    total_amount: c_int,
-) callconv(.c) void;
-
-// TODO
-// - SDL_SetAudioStreamGetCallback
-// - SDL_SetAudioStreamPutCallback
-// - SDL_DestroyAudioStream
-
-/// Convenience function for straightforward audio init for the common case.
-///
-/// If all your app intends to do is provide a single source of PCM audio, this
-/// function allows you to do all your audio setup in a single call.
-///
-/// This is also intended to be a clean means to migrate apps from SDL2.
-///
-/// This function will open an audio device, create a stream and bind it.
-/// Unlike other methods of setup, the audio device will be closed when this
-/// stream is destroyed, so the app can treat the returned SDL_AudioStream as
-/// the only object needed to manage audio playback.
-///
-/// Also unlike other functions, the audio device begins paused. This is to map
-/// more closely to SDL2-style behavior, since there is no extra step here to
-/// bind a stream to begin audio flowing. The audio device should be resumed
-/// with `SDL_ResumeAudioStreamDevice(stream);`
-///
-/// This function works with both playback and recording devices.
-///
-/// The `spec` parameter represents the app's side of the audio stream. That
-/// is, for recording audio, this will be the output format, and for playing
-/// audio, this will be the input format. If spec is NULL, the system will
-/// choose the format, and the app can use SDL_GetAudioStreamFormat() to obtain
-/// this information later.
-///
-/// If you don't care about opening a specific audio device, you can (and
-/// probably _should_), use SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK for playback and
-/// SDL_AUDIO_DEVICE_DEFAULT_RECORDING for recording.
-///
-/// One can optionally provide a callback function; if NULL, the app is
-/// expected to queue audio data for playback (or unqueue audio data if
-/// capturing). Otherwise, the callback will begin to fire once the device is
-/// unpaused.
-///
-/// Destroying the returned stream with SDL_DestroyAudioStream will also close
-/// the audio device associated with this stream.
-pub fn openAudioDeviceStream(device: AudioDeviceId, spec: *const AudioSpec, callback: ?AudioStreamCallback, userdata: ?*anyopaque) Error!*AudioStream {
-    const maybe_stream = SDL_OpenAudioDeviceStream(device, spec, callback, userdata);
-    return if (maybe_stream) |stream| stream else makeError();
-}
-extern fn SDL_OpenAudioDeviceStream(AudioDeviceId, *const AudioSpec, ?AudioStreamCallback, ?*anyopaque) ?*AudioStream;
-
-pub fn loadWAV(path: [:0]const u8, spec: *const AudioSpec, audio_buf: *const []u8, audio_len: *u32) bool {
-    return SDL_LoadWAV(path, spec, audio_buf, audio_len);
-}
-extern fn SDL_LoadWAV([*c]const u8, *const AudioSpec, *const []u8, *u32) bool;
-
-// TODO
-// - SDL_AudioPostmixCallback
-// - SDL_SetAudioPostmixCallback
-// - SDL_LoadWAV_IO
-// - SDL_MixAudio
-// - SDL_ConvertAudioSamples
-// - SDL_GetAudioFormatName
-// - SDL_GetSilenceValueForFormat
+const audio_h = @import("sdl3/audio.zig");
+pub const AUDIO_MASK_BITSIZE = audio_h.AUDIO_MASK_BITSIZE;
+pub const AUDIO_MASK_FLOAT = audio_h.AUDIO_MASK_FLOAT;
+pub const AUDIO_MASK_BIG_ENDIAN = audio_h.AUDIO_MASK_BIG_ENDIAN;
+pub const AUDIO_MASK_SIGNED = audio_h.AUDIO_MASK_SIGNED;
+pub const AudioFormat = audio_h.AudioFormat;
+pub const AUDIO_BITSIZE = audio_h.AUDIO_BITSIZE;
+pub const AUDIO_BYTESIZE = audio_h.AUDIO_BYTESIZE;
+pub const AUDIO_ISFLOAT = audio_h.AUDIO_ISFLOAT;
+pub const AUDIO_ISBIGENDIAN = audio_h.AUDIO_ISBIGENDIAN;
+pub const AUDIO_ISSIGNED = audio_h.AUDIO_ISSIGNED;
+pub const AUDIO_ISINT = audio_h.AUDIO_ISINT;
+pub const AUDIO_ISLITTLEENDIAN = audio_h.AUDIO_ISLITTLEENDIAN;
+pub const AUDIO_ISUNSIGNED = audio_h.AUDIO_ISUNSIGNED;
+pub const AudioDeviceId = audio_h.AudioDeviceId;
+pub const AUDIO_DEVICE_DEFAULT_PLAYBACK = audio_h.AUDIO_DEVICE_DEFAULT_PLAYBACK;
+pub const AUDIO_DEVICE_DEFAULT_RECORDING = audio_h.AUDIO_DEVICE_DEFAULT_RECORDING;
+pub const AudioSpec = audio_h.AudioSpec;
+pub const AUDIO_FRAMESIZE = audio_h.AUDIO_FRAMESIZE;
+pub const AudioStream = audio_h.AudioStream;
+pub const getNumAudioDrivers = audio_h.getNumAudioDrivers;
+pub const getAudioDriver = audio_h.getAudioDriver;
+pub const getCurrentAudioDriver = audio_h.getCurrentAudioDriver;
+pub const getAudioPlaybackDevices = audio_h.getAudioPlaybackDevices;
+pub const getAudioRecordingDevices = audio_h.getAudioRecordingDevices;
+pub const getAudioDeviceName = audio_h.getAudioDeviceName;
+pub const getAudioDeviceFormat = audio_h.getAudioDeviceFormat;
+pub const getAudioDeviceChannelMap = audio_h.getAudioDeviceChannelMap;
+pub const openAudioDevice = audio_h.openAudioDevice;
+pub const isAudioDevicePhysical = audio_h.isAudioDevicePhysical;
+pub const isAudioDevicePlayback = audio_h.isAudioDevicePlayback;
+pub const pauseAudioDevice = audio_h.pauseAudioDevice;
+pub const resumeAudioDevice = audio_h.resumeAudioDevice;
+pub const audioDevicePaused = audio_h.audioDevicePaused;
+pub const getAudioDeviceGain = audio_h.getAudioDeviceGain;
+pub const setAudioDeviceGain = audio_h.setAudioDeviceGain;
+pub const closeAudioDevice = audio_h.closeAudioDevice;
+pub const getAudioStreamDevice = audio_h.getAudioStreamDevice;
+pub const putAudioStreamData = audio_h.putAudioStreamData;
+pub const createAudioStream = audio_h.createAudioStream;
+pub const bindAudioStream = audio_h.bindAudioStream;
+pub const getAudioStreamQueued = audio_h.getAudioStreamQueued;
+pub const flushAudioStream = audio_h.flushAudioStream;
+pub const clearAudioStream = audio_h.clearAudioStream;
+pub const AudioStreamCallback = audio_h.AudioStreamCallback;
+pub const openAudioDeviceStream = audio_h.openAudioDeviceStream;
+pub const loadWAV = audio_h.loadWAV;
 
 //--------------------------------------------------------------------------------------------------
-//
 // 3D Rendering and GPU Compute (SDL_gpu.h)
-//
 //--------------------------------------------------------------------------------------------------
-
-// Type Declarations
-
-pub const GPUDevice = opaque {
-    pub const Properties = struct {
-        pub const create_debugmode_boolean = "SDL.gpu.device.create.debugmode";
-        pub const create_preferlowpower_boolean = "SDL.gpu.device.create.preferlowpower";
-        pub const create_name_string = "SDL.gpu.device.create.name";
-        pub const create_shaders_private_boolean = "SDL.gpu.device.create.shaders.private";
-        pub const create_shaders_spirv_boolean = "SDL.gpu.device.create.shaders.spirv";
-        pub const create_shaders_dxbc_boolean = "SDL.gpu.device.create.shaders.dxbc";
-        pub const create_shaders_dxil_boolean = "SDL.gpu.device.create.shaders.dxil";
-        pub const create_shaders_msl_boolean = "SDL.gpu.device.create.shaders.msl";
-        pub const create_shaders_metallib_boolean = "SDL.gpu.device.create.shaders.metallib";
-        pub const create_d3d12_semantic_name_string = "SDL.gpu.device.create.d3d12.semantic";
-    };
-};
-
-pub const GPUBuffer = opaque {
-    pub const Properties = struct {
-        pub const create_name_string = "SDL.gpu.buffer.create.name";
-    };
-};
-
-pub const GPUTransferBuffer = opaque {
-    pub const Properties = struct {
-        pub const create_name_string = "SDL.gpu.transferbuffer.create.name";
-    };
-};
-
-pub const GPUTexture = opaque {
-    pub const Properties = struct {
-        pub const create_d3d12_clear_r_float = "SDL.gpu.texture.create.d3d12.clear.r";
-        pub const create_d3d12_clear_g_float = "SDL.gpu.texture.create.d3d12.clear.g";
-        pub const create_d3d12_clear_b_float = "SDL.gpu.texture.create.d3d12.clear.b";
-        pub const create_d3d12_clear_a_float = "SDL.gpu.texture.create.d3d12.clear.a";
-        pub const create_d3d12_clear_depth_float = "SDL.gpu.texture.create.d3d12.clear.depth";
-        pub const create_d3d12_clear_stencil_number = "SDL.gpu.texture.create.d3d12.clear.stencil";
-        pub const create_name_string = "SDL.gpu.texture.create.name";
-    };
-};
-
-pub const GPUSampler = opaque {
-    pub const Properties = struct {
-        pub const create_name_string = "SDL.gpu.sampler.create.name";
-    };
-};
-
-pub const GPUShader = opaque {
-    pub const Properties = struct {
-        pub const create_name_string = "SDL.gpu.shader.create.name";
-    };
-};
-
-pub const GPUComputePipeline = opaque {
-    pub const Properties = struct {
-        pub const create_name_string = "SDL.gpu.computepipeline.create.name";
-    };
-};
-
-pub const GPUGraphicsPipeline = opaque {
-    pub const Properties = struct {
-        pub const create_name_string = "SDL.gpu.graphicspipeline.create.name";
-    };
-};
-
-pub const GPUCommandBuffer = opaque {};
-
-pub const GPURenderPass = opaque {};
-
-pub const GPUComputePass = opaque {};
-
-pub const GPUCopyPass = opaque {};
-
-pub const GPUFence = opaque {};
-
-pub const GPUPrimitiveType = enum(c_int) {
-    /// A series of separate triangles.
-    trianglelist = 0,
-    /// A series of connected triangles.
-    trianglestrip,
-    /// A series of separate lines.
-    linelist,
-    /// A series of connected lines.
-    linestrip,
-    /// A series of separate points.
-    pointlist,
-};
-
-pub const GPULoadOp = enum(c_int) {
-    /// The previous contents of the texture will be preserved.
-    load = 0,
-    /// The contents of the texture will be cleared to a color.
-    clear,
-    /// The previous contents of the texture need not be preserved. The contents
-    /// will be undefined.
-    dont_care,
-};
-
-pub const GPUStoreOp = enum(c_int) {
-    /// The contents generated during the render pass will be written to memory.
-    store = 0,
-    /// The contents generated during the render pass are not needed and may be
-    /// discarded. The contents will be undefined.
-    dont_care,
-    /// The multisample contents generated during the render pass will be
-    /// resolved to a non-multisample texture. The contents in the multisample
-    /// texture may then be discarded and will be undefined.
-    resolve,
-    /// The multisample contents generated during the render pass will be
-    /// resolved to a non-multisample texture. The contents in the multisample
-    /// texture will be written to memory.
-    resolve_and_store,
-};
-
-pub const GPUIndexElementSize = enum(c_int) {
-    ///  The index elements are 16-bit.
-    size_16bit = 0,
-    ///  The index elements are 32-bit.
-    size_32bit,
-};
-
-pub const GPUTextureFormat = enum(c_uint) {
-    invalid = 0,
-
-    // Unsigned Normalized Float Color Formats
-    a8_unorm,
-    r8_unorm,
-    r8g8_unorm,
-    r8g8b8a8_unorm,
-    r16_unorm,
-    r16g16_unorm,
-    r16g16b16a16_unorm,
-    r10g10b10a2_unorm,
-    b5g6r5_unorm,
-    b5g5r5a1_unorm,
-    b4g4r4a4_unorm,
-    b8g8r8a8_unorm,
-
-    // Compressed Unsigned Normalized Float Color Formats
-    bc1_rgba_unorm,
-    bc2_rgba_unorm,
-    bc3_rgba_unorm,
-    bc4_r_unorm,
-    bc5_rg_unorm,
-    bc7_rgba_unorm,
-
-    // Compressed Signed Float Color Formats
-    bc6h_rgb_float,
-
-    // Compressed Unsigned Float Color Formats
-    bc6h_rgb_ufloat,
-
-    // Signed Normalized Float Color Formats
-    r8_snorm,
-    r8g8_snorm,
-    r8g8b8a8_snorm,
-    r16_snorm,
-    r16g16_snorm,
-    r16g16b16a16_snorm,
-
-    // Signed Float Color Formats
-    r16_float,
-    r16g16_float,
-    r16g16b16a16_float,
-    r32_float,
-    r32g32_float,
-    r32g32b32a32_float,
-
-    // Unsigned Float Color Formats
-    r11g11b10_ufloat,
-
-    // Unsigned Integer Color Formats
-    r8_uint,
-    r8g8_uint,
-    r8g8b8a8_uint,
-    r16_uint,
-    r16g16_uint,
-    r16g16b16a16_uint,
-    r32_uint,
-    r32g32_uint,
-    r32g32b32a32_uint,
-
-    // Signed Integer Color Formats
-    r8_int,
-    r8g8_int,
-    r8g8b8a8_int,
-    r16_int,
-    r16g16_int,
-    r16g16b16a16_int,
-    r32_int,
-    r32g32_int,
-    r32g32b32a32_int,
-
-    // SRGB Unsigned Normalized Color Formats
-    r8g8b8a8_unorm_srgb,
-    b8g8r8a8_unorm_srgb,
-
-    // Compressed SRGB Unsigned Normalized Color Formats
-    bc1_rgba_unorm_srgb,
-    bc2_rgba_unorm_srgb,
-    bc3_rgba_unorm_srgb,
-    bc7_rgba_unorm_srgb,
-
-    // Depth Formats
-    d16_unorm,
-    d24_unorm,
-    d32_float,
-    d24_unorm_s8_uint,
-    d32_float_s8_uint,
-
-    // Compressed ASTC Normalized Float Color Formats
-    astc_4x4_unorm,
-    astc_5x4_unorm,
-    astc_5x5_unorm,
-    astc_6x5_unorm,
-    astc_6x6_unorm,
-    astc_8x5_unorm,
-    astc_8x6_unorm,
-    astc_8x8_unorm,
-    astc_10x5_unorm,
-    astc_10x6_unorm,
-    astc_10x8_unorm,
-    astc_10x10_unorm,
-    astc_12x10_unorm,
-    astc_12x12_unorm,
-
-    // Compressed SRGB ASTC Normalized Float Color Formats
-    astc_4x4_unorm_srgb,
-    astc_5x4_unorm_srgb,
-    astc_5x5_unorm_srgb,
-    astc_6x5_unorm_srgb,
-    astc_6x6_unorm_srgb,
-    astc_8x5_unorm_srgb,
-    astc_8x6_unorm_srgb,
-    astc_8x8_unorm_srgb,
-    astc_10x5_unorm_srgb,
-    astc_10x6_unorm_srgb,
-    astc_10x8_unorm_srgb,
-    astc_10x10_unorm_srgb,
-    astc_12x10_unorm_srgb,
-    astc_12x12_unorm_srgb,
-
-    // Compressed ASTC Signed Float Color Formats
-    astc_4x4_float,
-    astc_5x4_float,
-    astc_5x5_float,
-    astc_6x5_float,
-    astc_6x6_float,
-    astc_8x5_float,
-    astc_8x6_float,
-    astc_8x8_float,
-    astc_10x5_float,
-    astc_10x6_float,
-    astc_10x8_float,
-    astc_10x10_float,
-    astc_12x10_float,
-    astc_12x12_float,
-};
-
-pub const GPUTextureUsageFlags = packed struct(u32) {
-    sampler: bool = false,
-    color_target: bool = false,
-    depth_stencil_target: bool = false,
-    graphics_storage_read: bool = false,
-    compute_storage_read: bool = false,
-    compute_storage_write: bool = false,
-    compute_storage_simultaneous_read_write: bool = false,
-
-    __unused: u25 = 0,
-};
-
-pub const GPUTextureType = enum(c_int) {
-    texturetype_2d = 0,
-    texturetype_2d_array,
-    texturetype_3d,
-    texturetype_cube,
-    texturetype_cube_array,
-};
-
-pub const GPUSampleCount = enum(c_int) {
-    samplecount_1 = 0,
-    samplecount_2,
-    samplecount_4,
-    samplecount_8,
-};
-
-pub const GPUCubeMapFace = enum(c_int) {
-    positive_x = 0,
-    negative_x,
-    positive_y,
-    negative_y,
-    positive_z,
-    negative_z,
-};
-
-pub const GPUBufferUsageFlags = packed struct(u32) {
-    /// Buffer is a vertex buffer.
-    vertex: bool = false,
-    /// Buffer is an index buffer.
-    index: bool = false,
-    /// Buffer is an indirect buffer.
-    indirect: bool = false,
-    /// Buffer supports storage reads in graphics stages.
-    graphics_storage_read: bool = false,
-    /// Buffer supports storage reads in the compute stage.
-    compute_storage_read: bool = false,
-    /// Buffer supports storage writes in the compute stage.
-    compute_storage_write: bool = false,
-
-    __unused: u26 = 0,
-};
-
-pub const GPUTransferBufferUsage = enum(c_int) {
-    upload = 0,
-    download,
-};
-
-pub const GPUShaderStage = enum(c_int) {
-    vertex = 0,
-    fragment,
-};
-
-pub const GPUShaderFormat = packed struct(u32) {
-    /// Shaders for NDA'd platforms.
-    private: bool = false,
-    /// SPIR-V shaders for Vulkan.
-    spirv: bool = false,
-    /// DXBC SM5_1 shaders for D3D12.
-    dxbc: bool = false,
-    /// DXIL SM6_0 shaders for D3D12.
-    dxil: bool = false,
-    /// MSL shaders for Metal.
-    msl: bool = false,
-    /// Precompiled metallib shaders for Metal.
-    metallib: bool = false,
-
-    __unused: u26 = 0,
-};
-
-pub const GPUVertexElementFormat = enum(c_int) {
-    invalid = 0,
-
-    // 32-bit Signed Integers
-    int,
-    int2,
-    int3,
-    int4,
-
-    // 32-bit Unsigned Integers
-    uint,
-    uint2,
-    uint3,
-    uint4,
-
-    // 32-bit Floats
-    float,
-    float2,
-    float3,
-    float4,
-
-    // 8-bit Signed Integers
-    byte2,
-    byte4,
-
-    // 8-bit Unsigned Integers
-    ubyte2,
-    ubyte4,
-
-    // 8-bit Signed Normalized
-    byte2_norm,
-    byte4_norm,
-
-    // 8-bit Unsigned Normalized
-    ubyte2_norm,
-    ubyte4_norm,
-
-    // 16-bit Signed Integers
-    short2,
-    short4,
-
-    // 16-bit Unsigned Integers
-    ushort2,
-    ushort4,
-
-    // 16-bit Signed Normalized
-    short2_norm,
-    short4_norm,
-
-    // 16-bit Unsigned Normalized
-    ushort2_norm,
-    ushort4_norm,
-
-    // 16-bit Floats
-    half2,
-    half4,
-};
-
-pub const GPUVertexInputRate = enum(c_int) {
-    ///  Attribute addressing is a function of the vertex index.
-    vertex = 0,
-    ///  Attribute addressing is a function of the instance index.
-    instance,
-};
-
-pub const GPUFillMode = enum(c_int) {
-    ///  Polygons will be rendered via rasterization.
-    fill = 0,
-    ///  Polygon edges will be drawn as line segments.
-    line,
-};
-
-pub const GPUCullMode = enum(c_int) {
-    ///  No triangles are culled.
-    none = 0,
-    ///  Front-facing triangles are culled.
-    front,
-    ///  Back-facing triangles are culled.
-    back,
-};
-
-pub const GPUFrontFace = enum(c_int) {
-    ///  A triangle with counter-clockwise vertex winding will be considered front-facing.
-    counter_clockwise = 0,
-    ///  A triangle with clockwise vertex winding will be considered front-facing.
-    clockwise,
-};
-
-pub const GPUCompareOp = enum(c_int) {
-    invalid = 0,
-    ///  The comparison always evaluates false.
-    never,
-    ///  The comparison evaluates reference < test.
-    less,
-    ///  The comparison evaluates reference == test.
-    equal,
-    ///  The comparison evaluates reference <= test.
-    less_or_equal,
-    ///  The comparison evaluates reference > test.
-    greater,
-    ///  The comparison evaluates reference != test.
-    not_equal,
-    ///  The comparison evaluates reference >= test.
-    greater_or_equal,
-    ///  The comparison always evaluates true.
-    always,
-};
-
-pub const GPUStencilOp = enum(c_int) {
-    invalid = 0,
-    ///  Keeps the current value.
-    keep,
-    ///  Sets the value to 0.
-    zero,
-    ///  Sets the value to reference.
-    replace,
-    ///  Increments the current value and clamps to the maximum value.
-    increment_and_clamp,
-    ///  Decrements the current value and clamps to 0.
-    decrement_and_clamp,
-    ///  Bitwise-inverts the current value.
-    invert,
-    ///  Increments the current value and wraps back to 0.
-    increment_and_wrap,
-    ///  Decrements the current value and wraps to the maximum value.
-    decrement_and_wrap,
-};
-
-pub const GPUBlendOp = enum(c_int) {
-    invalid = 0,
-    /// (source * source_factor) + (destination * destination_factor)
-    add,
-    /// (source * source_factor) - (destination * destination_factor)
-    subtract,
-    /// (destination * destination_factor) - (source * source_factor)
-    reverse_subtract,
-    /// min(source, destination)
-    min,
-    /// max(source, destination)
-    max,
-};
-
-pub const GPUBlendFactor = enum(c_int) {
-    invalid = 0,
-    zero,
-    one,
-    /// source color
-    src_color,
-    /// 1 - source color
-    one_minus_src_color,
-    /// destination color
-    dst_color,
-    /// 1 - destination color
-    one_minus_dst_color,
-    /// source alpha
-    src_alpha,
-    /// 1 - source alpha
-    one_minus_src_alpha,
-    /// destination alpha
-    dst_alpha,
-    /// 1 - destination alpha
-    one_minus_dst_alpha,
-    /// blend constant
-    constant_color,
-    /// 1 - blend constant
-    one_minus_constant_color,
-    /// min(source alpha, 1 - destination alpha)
-    src_alpha_saturate,
-};
-
-pub const GPUColorComponentFlags = packed struct(u8) {
-    red: bool = false,
-    green: bool = false,
-    blue: bool = false,
-    alpha: bool = false,
-
-    __padding: u4 = 0,
-};
-
-pub const GPUFilter = enum(c_int) {
-    /// Point filtering.
-    nearest = 0,
-    /// Linear filtering.
-    linear,
-};
-
-pub const GPUSamplerMipmapMode = enum(c_int) {
-    /// Point filtering.
-    nearest = 0,
-    /// Linear filtering.
-    linear,
-};
-
-pub const GPUSamplerAddressMode = enum(c_int) {
-    /// Specifies that the coordinates will wrap around.
-    repeat = 0,
-    /// Specifies that the coordinates will wrap around mirrored.
-    mirrored_repeat,
-    /// Specifies that the coordinates will clamp to the 0-1 range.
-    clamp_to_edge,
-};
-
-pub const GPUPresentMode = enum(c_int) {
-    vsync = 0,
-    immediate,
-    mailbox,
-};
-
-pub const GPUSwapchainComposition = enum(c_int) {
-    sdr = 0,
-    sdr_linear,
-    hdr_extended_linear,
-    hdr10_st2084,
-};
-
-// Structures
-
-pub const GPUViewport = extern struct {
-    ///  The left offset of the viewport.
-    x: f32,
-    ///  The top offset of the viewport.
-    y: f32,
-    ///  The width of the viewport.
-    w: f32,
-    ///  The height of the viewport.
-    h: f32,
-    ///  The minimum depth of the viewport.
-    min_depth: f32,
-    ///  The maximum depth of the viewport.
-    max_depth: f32,
-};
-
-pub const GPUTextureTransferInfo = extern struct {
-    ///  The transfer buffer used in the transfer operation.
-    transfer_buffer: *GPUTransferBuffer,
-    ///  The starting byte of the image data in the transfer buffer.
-    offset: u32,
-    ///  The number of pixels from one row to the next.
-    pixels_per_row: u32,
-    ///  The number of rows from one layer/depth-slice to the next.
-    rows_per_layer: u32,
-};
-
-pub const GPUTransferBufferLocation = extern struct {
-    ///  The transfer buffer used in the transfer operation.
-    transfer_buffer: *GPUTransferBuffer,
-    /// The starting byte of the buffer data in the transfer buffer.
-    offset: u32,
-};
-
-pub const GPUTextureLocation = extern struct {
-    ///  The texture used in the copy operation.
-    texture: *GPUTexture,
-    ///  The mip level index of the location.
-    mip_level: u32,
-    ///  The layer index of the location.
-    layer: u32,
-    ///  The left offset of the location.
-    x: u32,
-    ///  The top offset of the location.
-    y: u32,
-    ///  The front offset of the location.
-    z: u32,
-};
-
-pub const GPUTextureRegion = extern struct {
-    ///  The texture used in the copy operation.
-    texture: *GPUTexture,
-    ///  The mip level index to transfer.
-    mip_level: u32,
-    ///  The layer index to transfer.
-    layer: u32,
-    ///  The left offset of the region.
-    x: u32,
-    ///  The top offset of the region.
-    y: u32,
-    ///  The front offset of the region.
-    z: u32,
-    ///  The width of the region.
-    w: u32,
-    ///  The height of the region.
-    h: u32,
-    ///  The depth of the region.
-    d: u32,
-};
-
-pub const GPUBlitRegion = extern struct {
-    ///  The texture.
-    texture: *GPUTexture,
-    ///  The mip level index of the region.
-    mip_level: u32,
-    ///  The layer index or depth plane of the region. This value is treated as a layer index on 2D array and cube textures, and as a depth plane on 3D textures.
-    layer_or_depth_plane: u32,
-    ///  The left offset of the region.
-    x: u32,
-    ///  The top offset of the region.
-    y: u32,
-    ///  The width of the region.
-    w: u32,
-    ///  The height of the region.
-    h: u32,
-};
-
-pub const GPUBufferLocation = extern struct {
-    ///  The buffer.
-    buffer: *GPUBuffer,
-    ///  The starting byte within the buffer.
-    offset: u32,
-};
-
-pub const GPUBufferRegion = extern struct {
-    ///  The buffer.
-    buffer: *GPUBuffer,
-    ///  The starting byte within the buffer.
-    offset: u32,
-    ///  The size in bytes of the region.
-    size: u32,
-};
-
-pub const GPUIndirectDrawCommand = extern struct {
-    ///  The number of vertices to draw.
-    num_vertices: u32,
-    ///  The number of instances to draw.
-    num_instances: u32,
-    ///  The index of the first vertex to draw.
-    first_vertex: u32,
-    ///  The ID of the first instance to draw.
-    first_instance: u32,
-};
-
-pub const GPUIndexedIndirectDrawCommand = extern struct {
-    ///  The number of indices to draw per instance.
-    num_indices: u32,
-    ///  The number of instances to draw.
-    num_instances: u32,
-    ///  The base index within the index buffer.
-    first_index: u32,
-    ///  The value added to the vertex index before indexing into the vertex buffer.
-    vertex_offset: i32,
-    ///  The ID of the first instance to draw.
-    first_instance: u32,
-};
-
-pub const GPUIndirectDispatchCommand = extern struct {
-    ///  The number of local workgroups to dispatch in the X dimension.
-    groupcount_x: u32,
-    ///  The number of local workgroups to dispatch in the Y dimension.
-    groupcount_y: u32,
-    ///  The number of local workgroups to dispatch in the Z dimension.
-    groupcount_z: u32,
-};
-
-// State structures
-
-pub const GPUSamplerCreateInfo = extern struct {
-    /// The minification filter to apply to lookups.
-    min_filter: GPUFilter,
-    /// The magnification filter to apply to lookups.
-    mag_filter: GPUFilter,
-    /// The mipmap filter to apply to lookups.
-    mipmap_mode: GPUSamplerMipmapMode,
-    /// The addressing mode for U coordinates outside [0, 1).
-    address_mode_u: GPUSamplerAddressMode,
-    /// The addressing mode for V coordinates outside [0, 1).
-    address_mode_v: GPUSamplerAddressMode,
-    /// The addressing mode for W coordinates outside [0, 1).
-    address_mode_w: GPUSamplerAddressMode,
-    /// The bias to be added to mipmap LOD calculation.
-    mip_lod_bias: f32,
-    /// The anisotropy value clamp used by the sampler. If enable_anisotropy is false, this is ignored.
-    max_anisotropy: f32,
-    /// The comparison operator to apply to fetched data before filtering.
-    compare_op: GPUCompareOp,
-    /// Clamps the minimum of the computed LOD value.
-    min_lod: f32,
-    /// Clamps the maximum of the computed LOD value.
-    max_lod: f32,
-    /// true to enable anisotropic filtering.
-    enable_anisotropy: bool,
-    /// true to enable comparison against a reference value during lookups.
-    enable_compare: bool,
-
-    padding1: u8 = 0,
-    padding2: u8 = 0,
-
-    /// A properties ID for extensions. Should be 0 if no extensions are needed.
-    props: PropertiesID = @fromBackingInt(@intCast(0)),
-};
-
-pub const GPUVertexBufferDescription = extern struct {
-    /// The binding slot of the vertex buffer.
-    slot: u32,
-    /// The size of a single element + the offset between elements.
-    pitch: u32,
-    /// Whether attribute addressing is a function of the vertex index or instance index.
-    input_rate: GPUVertexInputRate,
-    /// Reserved for future use. Must be set to 0.
-    instance_step_rate: u32 = 0,
-};
-
-pub const GPUVertexAttribute = extern struct {
-    /// The shader input location index.
-    location: u32,
-    /// The binding slot of the associated vertex buffer.
-    buffer_slot: u32,
-    /// The size and type of the attribute data.
-    format: GPUVertexElementFormat,
-    /// The byte offset of this attribute relative to the start of the vertex element.
-    offset: u32,
-};
-
-pub const GPUVertexInputState = extern struct {
-    /// A pointer to an array of vertex buffer descriptions.
-    vertex_buffer_descriptions: [*c]const GPUVertexBufferDescription,
-    /// The number of vertex buffer descriptions in the above array.
-    num_vertex_buffers: u32,
-    /// A pointer to an array of vertex attribute descriptions.
-    vertex_attributes: [*c]const GPUVertexAttribute,
-    /// The number of vertex attribute descriptions in the above array.
-    num_vertex_attributes: u32,
-};
-
-pub const GPUStencilOpState = extern struct {
-    /// The action performed on samples that fail the stencil test.
-    fail_op: GPUStencilOp,
-    /// The action performed on samples that pass the depth and stencil tests.
-    pass_op: GPUStencilOp,
-    /// The action performed on samples that pass the stencil test and fail the depth test.
-    depth_fail_op: GPUStencilOp,
-    /// The comparison operator used in the stencil test.
-    compare_op: GPUCompareOp,
-};
-
-pub const GPUColorTargetBlendState = extern struct {
-    /// The value to be multiplied by the source RGB value.
-    src_color_blendfactor: GPUBlendFactor,
-    /// The value to be multiplied by the destination RGB value.
-    dst_color_blendfactor: GPUBlendFactor,
-    /// The blend operation for the RGB components.
-    color_blend_op: GPUBlendOp,
-    /// The value to be multiplied by the source alpha.
-    src_alpha_blendfactor: GPUBlendFactor,
-    /// The value to be multiplied by the destination alpha.
-    dst_alpha_blendfactor: GPUBlendFactor,
-    /// The blend operation for the alpha component.
-    alpha_blend_op: GPUBlendOp,
-    /// A bitmask specifying which of the RGBA components are enabled for writing. Writes to all channels if enable_color_write_mask is false.
-    color_write_mask: GPUColorComponentFlags,
-    /// Whether blending is enabled for the color target.
-    enable_blend: bool,
-    /// Whether the color write mask is enabled.
-    enable_color_write_mask: bool,
-
-    padding1: u8 = 0,
-    padding2: u8 = 0,
-};
-
-pub const GPUShaderCreateInfo = extern struct {
-    /// The size in bytes of the code pointed to.
-    code_size: usize,
-    /// A pointer to shader code.
-    code: *const u8,
-    /// A pointer to a null-terminated UTF-8 string specifying the entry point function name for the shader.
-    entrypoint: [*c]const u8,
-    /// The format of the shader code.
-    format: GPUShaderFormat,
-    /// The stage the shader program corresponds to.
-    stage: GPUShaderStage,
-    /// The number of samplers defined in the shader.
-    num_samplers: u32,
-    /// The number of storage textures defined in the shader.
-    num_storage_textures: u32,
-    /// The number of storage buffers defined in the shader.
-    num_storage_buffers: u32,
-    /// The number of uniform buffers defined in the shader.
-    num_uniform_buffers: u32,
-
-    /// A properties ID for extensions. Should be 0 if no extensions are needed.
-    props: PropertiesID = @fromBackingInt(@intCast(0)),
-};
-
-pub const GPUTextureCreateInfo = extern struct {
-    /// The base dimensionality of the texture.
-    type: GPUTextureType,
-    /// The pixel format of the texture.
-    format: GPUTextureFormat,
-    /// How the texture is intended to be used by the client.
-    usage: GPUTextureUsageFlags,
-    /// The width of the texture.
-    width: u32,
-    /// The height of the texture.
-    height: u32,
-    /// The layer count or depth of the texture. This value is treated as a layer count on 2D array textures, and as a depth value on 3D textures.
-    layer_count_or_depth: u32,
-    /// The number of mip levels in the texture.
-    num_levels: u32,
-    /// The number of samples per texel. Only applies if the texture is used as a render target.
-    sample_count: GPUSampleCount,
-
-    /// A properties ID for extensions. Should be 0 if no extensions are needed.
-    props: PropertiesID = @fromBackingInt(@intCast(0)),
-};
-
-pub const GPUBufferCreateInfo = extern struct {
-    /// How the buffer is intended to be used by the client.
-    usage: GPUBufferUsageFlags,
-    /// The size in bytes of the buffer.
-    size: u32,
-
-    /// A properties ID for extensions. Should be 0 if no extensions are needed.
-    props: PropertiesID = @fromBackingInt(@intCast(0)),
-};
-
-pub const GPUTransferBufferCreateInfo = extern struct {
-    /// How the transfer buffer is intended to be used by the client.
-    usage: GPUTransferBufferUsage,
-    /// The size in bytes of the transfer buffer.
-    size: u32,
-
-    /// A properties ID for extensions. Should be 0 if no extensions are needed.
-    props: PropertiesID = @fromBackingInt(@intCast(0)),
-};
-
-pub const GPURasterizerState = extern struct {
-    /// Whether polygons will be filled in or drawn as lines.
-    fill_mode: GPUFillMode,
-    /// The facing direction in which triangles will be culled.
-    cull_mode: GPUCullMode,
-    /// The vertex winding that will cause a triangle to be determined as front-facing.
-    front_face: GPUFrontFace,
-    /// A scalar factor controlling the depth value added to each fragment.
-    depth_bias_constant_factor: f32,
-    /// The maximum depth bias of a fragment.
-    depth_bias_clamp: f32,
-    /// A scalar factor applied to a fragment's slope in depth calculations.
-    depth_bias_slope_factor: f32,
-    /// true to bias fragment depth values.
-    enable_depth_bias: bool,
-    /// true to enable depth clip, false to enable depth clamp.
-    enable_depth_clip: bool,
-
-    padding1: u8 = 0,
-    padding2: u8 = 0,
-};
-
-pub const GPUMultisampleState = extern struct {
-    /// The number of samples to be used in rasterization.
-    sample_count: GPUSampleCount,
-    /// Reserved for future use. Must be set to 0.
-    sample_mask: u32 = 0,
-    /// Reserved for future use. Must be set to false.
-    enable_mask: bool = false,
-
-    padding1: u8 = 0,
-    padding2: u8 = 0,
-    padding3: u8 = 0,
-};
-
-pub const GPUDepthStencilState = extern struct {
-    /// The comparison operator used for depth testing.
-    compare_op: GPUCompareOp,
-    /// The stencil op state for back-facing triangles.
-    back_stencil_state: GPUStencilOpState,
-    /// The stencil op state for front-facing triangles.
-    front_stencil_state: GPUStencilOpState,
-    /// Selects the bits of the stencil values participating in the stencil test.
-    compare_mask: u8,
-    /// Selects the bits of the stencil values updated by the stencil test.
-    write_mask: u8,
-    /// true enables the depth test.
-    enable_depth_test: bool,
-    /// true enables depth writes. Depth writes are always disabled when enable_depth_test is false.
-    enable_depth_write: bool,
-    /// true enables the stencil test.
-    enable_stencil_test: bool,
-
-    padding1: u8 = 0,
-    padding2: u8 = 0,
-    padding3: u8 = 0,
-};
-
-pub const GPUColorTargetDescription = extern struct {
-    /// The pixel format of the texture to be used as a color target.
-    format: GPUTextureFormat,
-    /// The blend state to be used for the color target.
-    blend_state: GPUColorTargetBlendState,
-};
-
-pub const GPUGraphicsPipelineTargetInfo = extern struct {
-    /// A pointer to an array of color target descriptions.
-    color_target_descriptions: [*c]const GPUColorTargetDescription,
-    /// The number of color target descriptions in the above array.
-    num_color_targets: u32,
-    /// The pixel format of the depth-stencil target. Ignored if has_depth_stencil_target is false.
-    depth_stencil_format: GPUTextureFormat,
-    /// true specifies that the pipeline uses a depth-stencil target.
-    has_depth_stencil_target: bool,
-
-    padding1: u8 = 0,
-    padding2: u8 = 0,
-    padding3: u8 = 0,
-};
-
-pub const GPUGraphicsPipelineCreateInfo = extern struct {
-    /// The vertex shader used by the graphics pipeline.
-    vertex_shader: *GPUShader,
-    /// The fragment shader used by the graphics pipeline.
-    fragment_shader: *GPUShader,
-    /// The vertex layout of the graphics pipeline.
-    vertex_input_state: GPUVertexInputState,
-    /// The primitive topology of the graphics pipeline.
-    primitive_type: GPUPrimitiveType,
-    /// The rasterizer state of the graphics pipeline.
-    rasterizer_state: GPURasterizerState,
-    /// The multisample state of the graphics pipeline.
-    multisample_state: GPUMultisampleState,
-    /// The depth-stencil state of the graphics pipeline.
-    depth_stencil_state: GPUDepthStencilState,
-    /// Formats and blend modes for the render targets of the graphics pipeline.
-    target_info: GPUGraphicsPipelineTargetInfo,
-
-    /// A properties ID for extensions. Should be 0 if no extensions are needed.
-    props: PropertiesID = @fromBackingInt(@intCast(0)),
-};
-
-pub const GPUComputePipelineCreateInfo = extern struct {
-    /// The size in bytes of the compute shader code pointed to.
-    code_size: usize,
-    /// A pointer to compute shader code.
-    code: *const u8,
-    /// A pointer to a null-terminated UTF-8 string specifying the entry point function name for the shader.
-    entrypoint: [*c]const u8,
-    /// The format of the compute shader code.
-    format: GPUShaderFormat,
-    /// The number of samplers defined in the shader.
-    num_samplers: u32,
-    /// The number of readonly storage textures defined in the shader.
-    num_readonly_storage_textures: u32,
-    /// The number of readonly storage buffers defined in the shader.
-    num_readonly_storage_buffers: u32,
-    /// The number of read-write storage textures defined in the shader.
-    num_readwrite_storage_textures: u32,
-    /// The number of read-write storage buffers defined in the shader.
-    num_readwrite_storage_buffers: u32,
-    /// The number of uniform buffers defined in the shader.
-    num_uniform_buffers: u32,
-    /// The number of threads in the X dimension. This should match the value in the shader.
-    threadcount_x: u32,
-    /// The number of threads in the Y dimension. This should match the value in the shader.
-    threadcount_y: u32,
-    /// The number of threads in the Z dimension. This should match the value in the shader.
-    threadcount_z: u32,
-
-    /// A properties ID for extensions. Should be 0 if no extensions are needed.
-    props: PropertiesID = @fromBackingInt(@intCast(0)),
-};
-
-pub const GPUColorTargetInfo = extern struct {
-    /// The texture that will be used as a color target by a render pass.
-    texture: *GPUTexture,
-    ///  The mip level to use as a color target.
-    mip_level: u32,
-    ///  The layer index or depth plane to use as a color target. This value is treated as a layer index on 2D array and cube textures, and as a depth plane on 3D textures.
-    layer_or_depth_plane: u32,
-    ///  The color to clear the color target to at the start of the render pass. Ignored if SDL_GPU_LOADOP_CLEAR is not used.
-    clear_color: FColor,
-    ///  What is done with the contents of the color target at the beginning of the render pass.
-    load_op: GPULoadOp,
-    ///  What is done with the results of the render pass.
-    store_op: GPUStoreOp,
-    ///  The texture that will receive the results of a multisample resolve operation. Ignored if a RESOLVE* store_op is not used.
-    resolve_texture: ?*GPUTexture = null,
-    ///  The mip level of the resolve texture to use for the resolve operation. Ignored if a RESOLVE* store_op is not used.
-    resolve_mip_level: u32 = 0,
-    ///  The layer index of the resolve texture to use for the resolve operation. Ignored if a RESOLVE* store_op is not used.
-    resolve_layer: u32 = 0,
-    /// true cycles the texture if the texture is bound and load_op is not LOAD
-    cycle: bool,
-    ///  true cycles the resolve texture if the resolve texture is bound. Ignored if a RESOLVE* store_op is not used.
-    cycle_resolve_texture: bool = false,
-
-    padding1: u8 = 0,
-    padding2: u8 = 0,
-};
-
-pub const GPUDepthStencilTargetInfo = extern struct {
-    ///  The texture that will be used as the depth stencil target by the render pass.
-    texture: *GPUTexture,
-    ///  The value to clear the depth component to at the beginning of the render pass. Ignored if SDL_GPU_LOADOP_CLEAR is not used.
-    clear_depth: f32,
-    ///  What is done with the depth contents at the beginning of the render pass.
-    load_op: GPULoadOp,
-    ///  What is done with the depth results of the render pass.
-    store_op: GPUStoreOp,
-    ///  What is done with the stencil contents at the beginning of the render pass.
-    stencil_load_op: GPULoadOp,
-    ///  What is done with the stencil results of the render pass.
-    stencil_store_op: GPUStoreOp,
-    /// true cycles the texture if the texture is bound and any load ops are not LOAD
-    cycle: bool,
-    ///  The value to clear the stencil component to at the beginning of the render pass. Ignored if SDL_GPU_LOADOP_CLEAR is not used.
-    clear_stencil: u8,
-
-    padding1: u8 = 0,
-    padding2: u8 = 0,
-};
-
-pub const GPUBlitInfo = extern struct {
-    /// The source region for the blit.
-    source: GPUBlitRegion,
-    /// The destination region for the blit.
-    destination: GPUBlitRegion,
-    /// What is done with the contents of the destination before the blit.
-    load_op: GPULoadOp,
-    /// The color to clear the destination region to before the blit. Ignored if load_op is not SDL_GPU_LOADOP_CLEAR.
-    clear_color: FColor,
-    /// The flip mode for the source region.
-    flip_mode: Surface.FlipMode,
-    /// The filter mode used when blitting.
-    filter: GPUFilter,
-    /// true cycles the destination texture if it is already bound.
-    cycle: bool,
-
-    padding1: u8 = 0,
-    padding2: u8 = 0,
-    padding3: u8 = 0,
-};
-
-// Binding structs
-
-pub const GPUBufferBinding = extern struct {
-    /// The buffer to bind. Must have been created with SDL_GPU_BUFFERUSAGE_VERTEX for SDL_BindGPUVertexBuffers, or SDL_GPU_BUFFERUSAGE_INDEX for SDL_BindGPUIndexBuffer.
-    buffer: *GPUBuffer,
-    /// The starting byte of the data to bind in the buffer.
-    offset: u32,
-};
-
-pub const GPUTextureSamplerBinding = extern struct {
-    /// The texture to bind. Must have been created with SDL_GPU_TEXTUREUSAGE_SAMPLER.
-    texture: *GPUTexture,
-    /// The sampler to bind.
-    sampler: *GPUSampler,
-};
-
-pub const GPUStorageBufferReadWriteBinding = extern struct {
-    /// The buffer to bind. Must have been created with SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_WRITE.
-    buffer: *GPUBuffer,
-    /// true cycles the buffer if it is already bound.
-    cycle: bool,
-
-    padding1: u8 = 0,
-    padding2: u8 = 0,
-    padding3: u8 = 0,
-};
-
-pub const GPUStorageTextureReadWriteBinding = extern struct {
-    /// The texture to bind. Must have been created with SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_WRITE or SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_SIMULTANEOUS_READ_WRITE.
-    texture: *GPUTexture,
-    /// The mip level index to bind.
-    mip_level: u32,
-    /// The layer index to bind.
-    layer: u32,
-    /// true cycles the texture if it is already bound.
-    cycle: bool,
-
-    padding1: u8 = 0,
-    padding2: u8 = 0,
-    padding3: u8 = 0,
-};
-
-// Functions
-
-// Device
-
-pub fn gpuSupportsShaderFormats(format_flags: GPUShaderFormat, maybe_name: ?[:0]const u8) bool {
-    return SDL_GPUSupportsShaderFormats(
-        format_flags,
-        if (maybe_name) |name| @as([*c]const u8, @ptrCast(name.ptr)) else null,
-    );
-}
-extern fn SDL_GPUSupportsShaderFormats(GPUShaderFormat, [*c]const u8) bool;
-
-pub fn gpuSupportsProperties(props: PropertiesID) bool {
-    return SDL_GPUSupportsProperties(props);
-}
-extern fn SDL_GPUSupportsProperties(PropertiesID) bool;
-
-pub fn createGPUDevice(format_flags: GPUShaderFormat, debug_mode: bool, maybe_name: ?[:0]const u8) Error!*GPUDevice {
-    const maybe_gpu = SDL_CreateGPUDevice(
-        format_flags,
-        debug_mode,
-        if (maybe_name) |name| @as([*c]const u8, @ptrCast(name.ptr)) else null,
-    );
-    return if (maybe_gpu) |gpu| gpu else makeError();
-}
-extern fn SDL_CreateGPUDevice(GPUShaderFormat, bool, [*c]const u8) ?*GPUDevice;
-
-pub fn createGPUDeviceWithProperties(props: PropertiesID) Error!*GPUDevice {
-    const maybe_gpu = SDL_CreateGPUDeviceWithProperties(props);
-    return if (maybe_gpu) |gpu| gpu else makeError();
-}
-extern fn SDL_CreateGPUDeviceWithProperties(PropertiesID) ?*GPUDevice;
-
-pub const destroyGPUDevice = SDL_DestroyGPUDevice;
-extern fn SDL_DestroyGPUDevice(device: *GPUDevice) void;
-
-pub const getNumGPUDrivers = SDL_GetNumGPUDrivers;
-extern fn SDL_GetNumGPUDrivers() c_int;
-
-pub fn getGPUDriver(index: c_int) [:0]const u8 {
-    const driver = SDL_GetGPUDriver(index);
-    return std.mem.span(driver);
-}
-extern fn SDL_GetGPUDriver(c_int) [*c]const u8;
-
-pub fn getGPUDeviceDriver(device: *GPUDevice) Error![:0]const u8 {
-    const maybe_driver = SDL_GetGPUDeviceDriver(device);
-    return if (maybe_driver) |driver| std.mem.span(driver) else makeError();
-}
-extern fn SDL_GetGPUDeviceDriver(*GPUDevice) [*c]const u8;
-
-pub const getGPUShaderFormats = SDL_GetGPUShaderFormats;
-extern fn SDL_GetGPUShaderFormats(device: *GPUDevice) GPUShaderFormat;
-
-// State Creation
-pub fn createGPUComputePipeline(device: *GPUDevice, createinfo: *const GPUComputePipelineCreateInfo) Error!*GPUComputePipeline {
-    const maybe_compute_pipeline = SDL_CreateGPUComputePipeline(device, createinfo);
-    return if (maybe_compute_pipeline) |compute_pipeline| compute_pipeline else makeError();
-}
-extern fn SDL_CreateGPUComputePipeline(*GPUDevice, *const GPUComputePipelineCreateInfo) ?*GPUComputePipeline;
-
-pub fn createGPUGraphicsPipeline(device: *GPUDevice, createinfo: *const GPUGraphicsPipelineCreateInfo) Error!*GPUGraphicsPipeline {
-    const maybe_graphics_pipeline = SDL_CreateGPUGraphicsPipeline(device, createinfo);
-    return if (maybe_graphics_pipeline) |graphics_pipeline| graphics_pipeline else makeError();
-}
-extern fn SDL_CreateGPUGraphicsPipeline(*GPUDevice, *const GPUGraphicsPipelineCreateInfo) ?*GPUGraphicsPipeline;
-
-pub fn createGPUSampler(device: *GPUDevice, createinfo: *const GPUSamplerCreateInfo) Error!*GPUSampler {
-    const maybe_sampler = SDL_CreateGPUSampler(device, createinfo);
-    return if (maybe_sampler) |sampler| sampler else makeError();
-}
-extern fn SDL_CreateGPUSampler(*GPUDevice, *const GPUSamplerCreateInfo) ?*GPUSampler;
-
-pub fn createGPUShader(device: *GPUDevice, createinfo: *const GPUShaderCreateInfo) Error!*GPUShader {
-    const maybe_shader = SDL_CreateGPUShader(device, createinfo);
-    return if (maybe_shader) |shader| shader else makeError();
-}
-extern fn SDL_CreateGPUShader(*GPUDevice, *const GPUShaderCreateInfo) ?*GPUShader;
-
-pub fn createGPUTexture(device: *GPUDevice, createinfo: *const GPUTextureCreateInfo) Error!*GPUTexture {
-    const maybe_texture = SDL_CreateGPUTexture(device, createinfo);
-    return if (maybe_texture) |texture| texture else makeError();
-}
-extern fn SDL_CreateGPUTexture(*GPUDevice, *const GPUTextureCreateInfo) ?*GPUTexture;
-
-pub fn createGPUBuffer(device: *GPUDevice, createinfo: *const GPUBufferCreateInfo) Error!*GPUBuffer {
-    const maybe_buffer = SDL_CreateGPUBuffer(device, createinfo);
-    return if (maybe_buffer) |buffer| buffer else makeError();
-}
-extern fn SDL_CreateGPUBuffer(*GPUDevice, *const GPUBufferCreateInfo) ?*GPUBuffer;
-
-pub fn createGPUTransferBuffer(device: *GPUDevice, createinfo: *const GPUTransferBufferCreateInfo) Error!*GPUTransferBuffer {
-    const maybe_buffer = SDL_CreateGPUTransferBuffer(device, createinfo);
-    return if (maybe_buffer) |buffer| buffer else makeError();
-}
-extern fn SDL_CreateGPUTransferBuffer(*GPUDevice, *const GPUTransferBufferCreateInfo) ?*GPUTransferBuffer;
-
-// Debug Naming
-
-pub const setGPUBufferName = SDL_SetGPUBufferName;
-extern fn SDL_SetGPUBufferName(device: *GPUDevice, buffer: *GPUBuffer, text: [*c]const u8) void;
-
-pub const setGPUTextureName = SDL_SetGPUTextureName;
-extern fn SDL_SetGPUTextureName(device: *GPUDevice, texture: *GPUTexture, text: [*c]const u8) void;
-
-pub const insertGPUDebugLabel = SDL_InsertGPUDebugLabel;
-extern fn SDL_InsertGPUDebugLabel(command_buffer: *GPUCommandBuffer, text: [*c]const u8) void;
-
-pub const pushGPUDebugGroup = SDL_PushGPUDebugGroup;
-extern fn SDL_PushGPUDebugGroup(command_buffer: *GPUCommandBuffer, name: [*c]const u8) void;
-
-pub const popGPUDebugGroup = SDL_PopGPUDebugGroup;
-extern fn SDL_PopGPUDebugGroup(command_buffer: *GPUCommandBuffer) void;
-
-// Disposal
-
-pub const releaseGPUTexture = SDL_ReleaseGPUTexture;
-extern fn SDL_ReleaseGPUTexture(device: *GPUDevice, texture: *GPUTexture) void;
-
-pub const releaseGPUSampler = SDL_ReleaseGPUSampler;
-extern fn SDL_ReleaseGPUSampler(device: *GPUDevice, sampler: *GPUSampler) void;
-
-pub const releaseGPUBuffer = SDL_ReleaseGPUBuffer;
-extern fn SDL_ReleaseGPUBuffer(device: *GPUDevice, buffer: *GPUBuffer) void;
-
-pub const releaseGPUTransferBuffer = SDL_ReleaseGPUTransferBuffer;
-extern fn SDL_ReleaseGPUTransferBuffer(device: *GPUDevice, transfer_buffer: *GPUTransferBuffer) void;
-
-pub const releaseGPUComputePipeline = SDL_ReleaseGPUComputePipeline;
-extern fn SDL_ReleaseGPUComputePipeline(device: *GPUDevice, compute_pipeline: *GPUComputePipeline) void;
-
-pub const releaseGPUShader = SDL_ReleaseGPUShader;
-extern fn SDL_ReleaseGPUShader(device: *GPUDevice, shader: *GPUShader) void;
-
-pub const releaseGPUGraphicsPipeline = SDL_ReleaseGPUGraphicsPipeline;
-extern fn SDL_ReleaseGPUGraphicsPipeline(device: *GPUDevice, graphics_pipeline: *GPUGraphicsPipeline) void;
-
-pub fn acquireGPUCommandBuffer(device: *GPUDevice) Error!*GPUCommandBuffer {
-    const maybe_command_buffer = SDL_AcquireGPUCommandBuffer(device);
-    return if (maybe_command_buffer) |command_buffer| command_buffer else makeError();
-}
-extern fn SDL_AcquireGPUCommandBuffer(*GPUDevice) ?*GPUCommandBuffer;
-
-// Uniform Data
-
-pub const pushGPUVertexUniformData = SDL_PushGPUVertexUniformData;
-extern fn SDL_PushGPUVertexUniformData(command_buffer: *GPUCommandBuffer, slot_index: u32, data: *const anyopaque, length: u32) void;
-
-pub const pushGPUFragmentUniformData = SDL_PushGPUFragmentUniformData;
-extern fn SDL_PushGPUFragmentUniformData(command_buffer: *GPUCommandBuffer, slot_index: u32, data: *const anyopaque, length: u32) void;
-
-pub const pushGPUComputeUniformData = SDL_PushGPUComputeUniformData;
-extern fn SDL_PushGPUComputeUniformData(command_buffer: *GPUCommandBuffer, slot_index: u32, data: *const anyopaque, length: u32) void;
-
-// Graphics State
-
-pub const beginGPURenderPass = SDL_BeginGPURenderPass;
-extern fn SDL_BeginGPURenderPass(
-    command_buffer: *GPUCommandBuffer,
-    color_target_infos: [*c]const GPUColorTargetInfo,
-    num_color_targets: u32,
-    depth_stencil_target_info: ?*const GPUDepthStencilTargetInfo,
-) *GPURenderPass;
-
-pub const bindGPUGraphicsPipeline = SDL_BindGPUGraphicsPipeline;
-extern fn SDL_BindGPUGraphicsPipeline(render_pass: *GPURenderPass, graphics_pipeline: *GPUGraphicsPipeline) void;
-
-pub const setGPUViewport = SDL_SetGPUViewport;
-extern fn SDL_SetGPUViewport(render_pass: *GPURenderPass, viewport: *const GPUViewport) void;
-
-pub const setGPUScissor = SDL_SetGPUScissor;
-extern fn SDL_SetGPUScissor(render_pass: *GPURenderPass, scissor: *const Rect) void;
-
-pub const setGPUBlendConstants = SDL_SetGPUBlendConstants;
-extern fn SDL_SetGPUBlendConstants(render_pass: *GPURenderPass, blend_constants: FColor) void;
-
-pub const setGPUStencilReference = SDL_SetGPUStencilReference;
-extern fn SDL_SetGPUStencilReference(render_pass: *GPURenderPass, reference: u8) void;
-
-pub const bindGPUVertexBuffers = SDL_BindGPUVertexBuffers;
-extern fn SDL_BindGPUVertexBuffers(render_pass: *GPURenderPass, first_slot: u32, [*c]const GPUBufferBinding, num_bindings: u32) void;
-
-pub const bindGPUIndexBuffer = SDL_BindGPUIndexBuffer;
-extern fn SDL_BindGPUIndexBuffer(render_pass: *GPURenderPass, binding: *const GPUBufferBinding, index_element_size: GPUIndexElementSize) void;
-
-pub const bindGPUVertexSamplers = SDL_BindGPUVertexSamplers;
-extern fn SDL_BindGPUVertexSamplers(
-    render_pass: *GPURenderPass,
-    first_slot: u32,
-    texture_sampler_bindings: [*c]const GPUTextureSamplerBinding,
-    num_bindings: u32,
-) void;
-
-pub const bindGPUVertexStorageTextures = SDL_BindGPUVertexStorageTextures;
-extern fn SDL_BindGPUVertexStorageTextures(
-    render_pass: *GPURenderPass,
-    first_slot: u32,
-    storage_textures: [*c]const *GPUTexture,
-    num_bindings: u32,
-) void;
-
-pub const bindGPUVertexStorageBuffers = SDL_BindGPUVertexStorageBuffers;
-extern fn SDL_BindGPUVertexStorageBuffers(
-    render_pass: *GPURenderPass,
-    first_slot: u32,
-    storage_buffers: [*c]const *GPUBuffer,
-    num_bindings: u32,
-) void;
-
-pub const bindGPUFragmentSamplers = SDL_BindGPUFragmentSamplers;
-extern fn SDL_BindGPUFragmentSamplers(
-    render_pass: *GPURenderPass,
-    first_slot: u32,
-    texture_sampler_bindings: [*c]const GPUTextureSamplerBinding,
-    num_bindings: u32,
-) void;
-
-pub const bindGPUFragmentStorageTextures = SDL_BindGPUFragmentStorageTextures;
-extern fn SDL_BindGPUFragmentStorageTextures(
-    render_pass: *GPURenderPass,
-    first_slot: u32,
-    storage_textures: [*c]const *GPUTexture,
-    num_bindings: u32,
-) void;
-
-pub const bindGPUFragmentStorageBuffers = SDL_BindGPUFragmentStorageBuffers;
-extern fn SDL_BindGPUFragmentStorageBuffers(
-    render_pass: *GPURenderPass,
-    first_slot: u32,
-    storage_buffers: [*c]const *GPUBuffer,
-    num_bindings: u32,
-) void;
-
-// Drawing
-
-pub const drawGPUIndexedPrimitives = SDL_DrawGPUIndexedPrimitives;
-extern fn SDL_DrawGPUIndexedPrimitives(
-    render_pass: *GPURenderPass,
-    num_indices: u32,
-    num_instances: u32,
-    first_index: u32,
-    vertex_offset: i32,
-    first_instance: u32,
-) void;
-
-pub const drawGPUPrimitives = SDL_DrawGPUPrimitives;
-extern fn SDL_DrawGPUPrimitives(
-    render_pass: *GPURenderPass,
-    num_vertices: u32,
-    num_instances: u32,
-    first_vertex: u32,
-    first_instance: u32,
-) void;
-
-pub const drawGPUPrimitivesIndirect = SDL_DrawGPUPrimitivesIndirect;
-extern fn SDL_DrawGPUPrimitivesIndirect(
-    render_pass: *GPURenderPass,
-    buffer: *GPUBuffer,
-    offset: u32,
-    draw_count: u32,
-) void;
-
-pub const drawGPUIndexedPrimitivesIndirect = SDL_DrawGPUIndexedPrimitivesIndirect;
-extern fn SDL_DrawGPUIndexedPrimitivesIndirect(
-    render_pass: *GPURenderPass,
-    buffer: *GPUBuffer,
-    offset: u32,
-    draw_count: u32,
-) void;
-
-pub const endGPURenderPass = SDL_EndGPURenderPass;
-extern fn SDL_EndGPURenderPass(render_pass: *GPURenderPass) void;
-
-// Compute Pass
-
-pub const beginGPUComputePass = SDL_BeginGPUComputePass;
-extern fn SDL_BeginGPUComputePass(
-    command_buffer: *GPUCommandBuffer,
-    storage_texture_bindings: [*c]const GPUStorageTextureReadWriteBinding,
-    num_storage_texture_bindings: u32,
-    storage_buffer_bindings: [*c]const GPUStorageBufferReadWriteBinding,
-    num_storage_buffer_bindings: u32,
-) *GPUComputePass;
-
-pub const bindGPUComputePipeline = SDL_BindGPUComputePipeline;
-extern fn SDL_BindGPUComputePipeline(compute_pass: *GPUComputePass, compute_pipeline: *GPUComputePipeline) void;
-
-pub const bindGPUComputeSamplers = SDL_BindGPUComputeSamplers;
-extern fn SDL_BindGPUComputeSamplers(
-    compute_pass: *GPUComputePass,
-    first_slot: u32,
-    texture_sampler_bindings: [*c]const GPUTextureSamplerBinding,
-    num_bindings: u32,
-) void;
-
-pub const bindGPUComputeStorageTextures = SDL_BindGPUComputeStorageTextures;
-extern fn SDL_BindGPUComputeStorageTextures(
-    compute_pass: *GPUComputePass,
-    first_slot: u32,
-    storage_textures: [*c]const *GPUTexture,
-    num_bindings: u32,
-) void;
-
-pub const bindGPUComputeStorageBuffers = SDL_BindGPUComputeStorageBuffers;
-extern fn SDL_BindGPUComputeStorageBuffers(
-    compute_pass: *GPUComputePass,
-    first_slot: u32,
-    storage_buffers: [*c]const *GPUBuffer,
-    num_bindings: u32,
-) void;
-
-pub const dispatchGPUCompute = SDL_DispatchGPUCompute;
-extern fn SDL_DispatchGPUCompute(compute_pass: *GPUComputePass, groupcount_x: u32, groupcount_y: u32, groupcount_z: u32) void;
-
-pub const dispatchGPUComputeIndirect = SDL_DispatchGPUComputeIndirect;
-extern fn SDL_DispatchGPUComputeIndirect(compute_pass: *GPUComputePass, buffer: *GPUBuffer, offset: u32) void;
-
-pub const endGPUComputePass = SDL_EndGPUComputePass;
-extern fn SDL_EndGPUComputePass(compute_pass: *GPUComputePass) void;
-
-// TransferBuffer Data
-
-pub fn mapGPUTransferBuffer(device: *GPUDevice, transfer_buffer: *GPUTransferBuffer, cycle: bool) Error!*anyopaque {
-    const maybe_address = SDL_MapGPUTransferBuffer(device, transfer_buffer, cycle);
-    return if (maybe_address) |address| address else makeError();
-}
-extern fn SDL_MapGPUTransferBuffer(*GPUDevice, *GPUTransferBuffer, bool) ?*anyopaque;
-
-pub const unmapGPUTransferBuffer = SDL_UnmapGPUTransferBuffer;
-extern fn SDL_UnmapGPUTransferBuffer(device: *GPUDevice, transfer_buffer: *GPUTransferBuffer) void;
-
-// Copy Pass
-
-pub const beginGPUCopyPass = SDL_BeginGPUCopyPass;
-extern fn SDL_BeginGPUCopyPass(command_buffer: *GPUCommandBuffer) *GPUCopyPass;
-
-pub const uploadToGPUTexture = SDL_UploadToGPUTexture;
-extern fn SDL_UploadToGPUTexture(
-    copy_pass: *GPUCopyPass,
-    source: *const GPUTextureTransferInfo,
-    destination: *const GPUTextureRegion,
-    cycle: bool,
-) void;
-
-pub const uploadToGPUBuffer = SDL_UploadToGPUBuffer;
-extern fn SDL_UploadToGPUBuffer(
-    copy_pass: *GPUCopyPass,
-    source: *const GPUTransferBufferLocation,
-    destination: *const GPUBufferRegion,
-    cycle: bool,
-) void;
-
-pub const copyGPUTextureToTexture = SDL_CopyGPUTextureToTexture;
-extern fn SDL_CopyGPUTextureToTexture(
-    copy_pass: *GPUCopyPass,
-    source: *const GPUTextureLocation,
-    destination: *const GPUTextureLocation,
-    w: u32,
-    h: u32,
-    d: u32,
-    cycle: bool,
-) void;
-
-pub const copyGPUBufferToBuffer = SDL_CopyGPUBufferToBuffer;
-extern fn SDL_CopyGPUBufferToBuffer(
-    copy_pass: *GPUCopyPass,
-    source: *const GPUBufferLocation,
-    destination: *const GPUBufferLocation,
-    size: u32,
-    cycle: bool,
-) void;
-
-pub const downloadFromGPUTexture = SDL_DownloadFromGPUTexture;
-extern fn SDL_DownloadFromGPUTexture(
-    copy_pass: *GPUCopyPass,
-    source: *const GPUTextureRegion,
-    destination: *const GPUTextureTransferInfo,
-) void;
-
-pub const downloadFromGPUBuffer = SDL_DownloadFromGPUBuffer;
-extern fn SDL_DownloadFromGPUBuffer(
-    copy_pass: *GPUCopyPass,
-    source: *const GPUBufferRegion,
-    destination: *const GPUTransferBufferLocation,
-) void;
-
-pub const endGPUCopyPass = SDL_EndGPUCopyPass;
-extern fn SDL_EndGPUCopyPass(copy_pass: *GPUCopyPass) void;
-
-pub const generateMipmapsForGPUTexture = SDL_GenerateMipmapsForGPUTexture;
-extern fn SDL_GenerateMipmapsForGPUTexture(command_buffer: *GPUCommandBuffer, texture: *GPUTexture) void;
-
-pub const blitGPUTexture = SDL_BlitGPUTexture;
-extern fn SDL_BlitGPUTexture(command_buffer: *GPUCommandBuffer, info: *const GPUBlitInfo) void;
-
-// Submission/Presentation
-
-pub const windowSupportsGPUSwapchainComposition = SDL_WindowSupportsGPUSwapchainComposition;
-extern fn SDL_WindowSupportsGPUSwapchainComposition(
-    device: *GPUDevice,
-    window: *Window,
-    swapchain_composition: GPUSwapchainComposition,
-) bool;
-
-pub const windowSupportsGPUPresentMode = SDL_WindowSupportsGPUPresentMode;
-extern fn SDL_WindowSupportsGPUPresentMode(
-    device: *GPUDevice,
-    window: *Window,
-    present_mode: GPUPresentMode,
-) bool;
-
-pub fn claimWindowForGPUDevice(device: *GPUDevice, window: *Window) Error!void {
-    if (!SDL_ClaimWindowForGPUDevice(device, window)) return makeError();
-}
-extern fn SDL_ClaimWindowForGPUDevice(*GPUDevice, *Window) bool;
-
-pub const releaseWindowFromGPUDevice = SDL_ReleaseWindowFromGPUDevice;
-extern fn SDL_ReleaseWindowFromGPUDevice(device: *GPUDevice, window: *Window) void;
-
-pub fn setGPUSwapchainParameters(
-    device: *GPUDevice,
-    window: *Window,
-    swapchain_composition: GPUSwapchainComposition,
-    present_mode: GPUPresentMode,
-) Error!void {
-    if (!SDL_SetGPUSwapchainParameters(device, window, swapchain_composition, present_mode)) return makeError();
-}
-extern fn SDL_SetGPUSwapchainParameters(*GPUDevice, *Window, GPUSwapchainComposition, GPUPresentMode) bool;
-
-pub fn setGPUAllowedFramesInFlight(device: *GPUDevice, allowed_frames_in_flight: u32) Error!void {
-    if (!SDL_SetGPUAllowedFramesInFlight(device, allowed_frames_in_flight)) return makeError();
-}
-extern fn SDL_SetGPUAllowedFramesInFlight(*GPUDevice, u32) bool;
-
-pub const getGPUSwapchainTextureFormat = SDL_GetGPUSwapchainTextureFormat;
-extern fn SDL_GetGPUSwapchainTextureFormat(device: *GPUDevice, window: *Window) GPUTextureFormat;
-
-pub fn acquireGPUSwapchainTexture(
-    command_buffer: *GPUCommandBuffer,
-    window: *Window,
-    swapchain_texture: *?*GPUTexture,
-    swapchain_texture_width: ?*u32,
-    swapchain_texture_height: ?*u32,
-) Error!void {
-    if (!SDL_AcquireGPUSwapchainTexture(
-        command_buffer,
-        window,
-        swapchain_texture,
-        swapchain_texture_width,
-        swapchain_texture_height,
-    )) return makeError();
-}
-extern fn SDL_AcquireGPUSwapchainTexture(*GPUCommandBuffer, *Window, *?*GPUTexture, ?*u32, ?*u32) bool;
-
-pub fn waitForGPUSwapchain(device: *GPUDevice, window: *Window) Error!void {
-    if (!SDL_WaitForGPUSwapchain(device, window)) return makeError();
-}
-extern fn SDL_WaitForGPUSwapchain(*GPUDevice, *Window) bool;
-
-pub fn waitAndAcquireGPUSwapchainTexture(
-    command_buffer: *GPUCommandBuffer,
-    window: *Window,
-    swapchain_texture: *?*GPUTexture,
-    swapchain_texture_width: ?*u32,
-    swapchain_texture_height: ?*u32,
-) Error!void {
-    if (!SDL_WaitAndAcquireGPUSwapchainTexture(
-        command_buffer,
-        window,
-        swapchain_texture,
-        swapchain_texture_width,
-        swapchain_texture_height,
-    )) return makeError();
-}
-extern fn SDL_WaitAndAcquireGPUSwapchainTexture(*GPUCommandBuffer, *Window, *?*GPUTexture, ?*u32, ?*u32) bool;
-
-pub fn submitGPUCommandBuffer(command_buffer: *GPUCommandBuffer) Error!void {
-    if (!SDL_SubmitGPUCommandBuffer(command_buffer)) return makeError();
-}
-extern fn SDL_SubmitGPUCommandBuffer(*GPUCommandBuffer) bool;
-
-pub fn submitGPUCommandBufferAndAcquireFence(command_buffer: *GPUCommandBuffer) Error!*GPUFence {
-    const maybe_fence = SDL_SubmitGPUCommandBufferAndAcquireFence(command_buffer);
-    return if (maybe_fence) |fence| fence else makeError();
-}
-extern fn SDL_SubmitGPUCommandBufferAndAcquireFence(*GPUCommandBuffer) ?*GPUFence;
-
-pub fn cancelGPUCommandBuffer(command_buffer: *GPUCommandBuffer) Error!void {
-    if (!SDL_CancelGPUCommandBuffer(command_buffer)) return makeError();
-}
-extern fn SDL_CancelGPUCommandBuffer(*GPUCommandBuffer) bool;
-
-pub fn waitForGPUIdle(device: *GPUDevice) Error!void {
-    if (!SDL_WaitForGPUIdle(device)) return makeError();
-}
-extern fn SDL_WaitForGPUIdle(*GPUDevice) bool;
-
-pub fn waitForGPUFences(device: *GPUDevice, wait_all: bool, fences: [*]const *GPUFence, num_fences: u32) Error!void {
-    if (!SDL_WaitForGPUFences(device, wait_all, fences, num_fences)) return makeError();
-}
-extern fn SDL_WaitForGPUFences(*GPUDevice, bool, [*c]const *GPUFence, u32) bool;
-
-pub const queryGPUFence = SDL_QueryGPUFence;
-extern fn SDL_QueryGPUFence(device: *GPUDevice, fence: *GPUFence) bool;
-
-pub const releaseGPUFence = SDL_ReleaseGPUFence;
-extern fn SDL_ReleaseGPUFence(device: *GPUDevice, fence: *GPUFence) void;
-
-// Format Info
-
-pub const gpuTextureFormatTexelBlockSize = SDL_GPUTextureFormatTexelBlockSize;
-extern fn SDL_GPUTextureFormatTexelBlockSize(format: GPUTextureFormat) u32;
-
-pub const gpuTextureSupportsFormat = SDL_GPUTextureSupportsFormat;
-extern fn SDL_GPUTextureSupportsFormat(
-    device: *GPUDevice,
-    format: GPUTextureFormat,
-    type: GPUTextureType,
-    usage: GPUTextureUsageFlags,
-) bool;
-
-pub const gpuTextureSupportsSampleCount = SDL_GPUTextureSupportsSampleCount;
-extern fn SDL_GPUTextureSupportsSampleCount(
-    device: *GPUDevice,
-    format: GPUTextureFormat,
-    sample_count: GPUSampleCount,
-) bool;
-
-pub const calculateGPUTextureFormatSize = SDL_CalculateGPUTextureFormatSize;
-extern fn SDL_CalculateGPUTextureFormatSize(
-    format: GPUTextureFormat,
-    width: u32,
-    height: u32,
-    depth_or_layer_count: u32,
-) u32;
-
-// These two need special handling to be defined only on GDK platform.
-// TODO:
-// - SDL_GDKSuspendGPU
-// - SDL_GDKResumeGPU
+const gpu_h = @import("sdl3/gpu.zig");
+pub const GPUDevice = gpu_h.GPUDevice;
+pub const GPUBuffer = gpu_h.GPUBuffer;
+pub const GPUTransferBuffer = gpu_h.GPUTransferBuffer;
+pub const GPUTexture = gpu_h.GPUTexture;
+pub const GPUSampler = gpu_h.GPUSampler;
+pub const GPUShader = gpu_h.GPUShader;
+pub const GPUComputePipeline = gpu_h.GPUComputePipeline;
+pub const GPUGraphicsPipeline = gpu_h.GPUGraphicsPipeline;
+pub const GPUCommandBuffer = gpu_h.GPUCommandBuffer;
+pub const GPURenderPass = gpu_h.GPURenderPass;
+pub const GPUComputePass = gpu_h.GPUComputePass;
+pub const GPUCopyPass = gpu_h.GPUCopyPass;
+pub const GPUFence = gpu_h.GPUFence;
+pub const GPUPrimitiveType = gpu_h.GPUPrimitiveType;
+pub const GPULoadOp = gpu_h.GPULoadOp;
+pub const GPUStoreOp = gpu_h.GPUStoreOp;
+pub const GPUIndexElementSize = gpu_h.GPUIndexElementSize;
+pub const GPUTextureFormat = gpu_h.GPUTextureFormat;
+pub const GPUTextureUsageFlags = gpu_h.GPUTextureUsageFlags;
+pub const GPUTextureType = gpu_h.GPUTextureType;
+pub const GPUSampleCount = gpu_h.GPUSampleCount;
+pub const GPUCubeMapFace = gpu_h.GPUCubeMapFace;
+pub const GPUBufferUsageFlags = gpu_h.GPUBufferUsageFlags;
+pub const GPUTransferBufferUsage = gpu_h.GPUTransferBufferUsage;
+pub const GPUShaderStage = gpu_h.GPUShaderStage;
+pub const GPUShaderFormat = gpu_h.GPUShaderFormat;
+pub const GPUVertexElementFormat = gpu_h.GPUVertexElementFormat;
+pub const GPUVertexInputRate = gpu_h.GPUVertexInputRate;
+pub const GPUFillMode = gpu_h.GPUFillMode;
+pub const GPUCullMode = gpu_h.GPUCullMode;
+pub const GPUFrontFace = gpu_h.GPUFrontFace;
+pub const GPUCompareOp = gpu_h.GPUCompareOp;
+pub const GPUStencilOp = gpu_h.GPUStencilOp;
+pub const GPUBlendOp = gpu_h.GPUBlendOp;
+pub const GPUBlendFactor = gpu_h.GPUBlendFactor;
+pub const GPUColorComponentFlags = gpu_h.GPUColorComponentFlags;
+pub const GPUFilter = gpu_h.GPUFilter;
+pub const GPUSamplerMipmapMode = gpu_h.GPUSamplerMipmapMode;
+pub const GPUSamplerAddressMode = gpu_h.GPUSamplerAddressMode;
+pub const GPUPresentMode = gpu_h.GPUPresentMode;
+pub const GPUSwapchainComposition = gpu_h.GPUSwapchainComposition;
+pub const GPUViewport = gpu_h.GPUViewport;
+pub const GPUTextureTransferInfo = gpu_h.GPUTextureTransferInfo;
+pub const GPUTransferBufferLocation = gpu_h.GPUTransferBufferLocation;
+pub const GPUTextureLocation = gpu_h.GPUTextureLocation;
+pub const GPUTextureRegion = gpu_h.GPUTextureRegion;
+pub const GPUBlitRegion = gpu_h.GPUBlitRegion;
+pub const GPUBufferLocation = gpu_h.GPUBufferLocation;
+pub const GPUBufferRegion = gpu_h.GPUBufferRegion;
+pub const GPUIndirectDrawCommand = gpu_h.GPUIndirectDrawCommand;
+pub const GPUIndexedIndirectDrawCommand = gpu_h.GPUIndexedIndirectDrawCommand;
+pub const GPUIndirectDispatchCommand = gpu_h.GPUIndirectDispatchCommand;
+pub const GPUSamplerCreateInfo = gpu_h.GPUSamplerCreateInfo;
+pub const GPUVertexBufferDescription = gpu_h.GPUVertexBufferDescription;
+pub const GPUVertexAttribute = gpu_h.GPUVertexAttribute;
+pub const GPUVertexInputState = gpu_h.GPUVertexInputState;
+pub const GPUStencilOpState = gpu_h.GPUStencilOpState;
+pub const GPUColorTargetBlendState = gpu_h.GPUColorTargetBlendState;
+pub const GPUShaderCreateInfo = gpu_h.GPUShaderCreateInfo;
+pub const GPUTextureCreateInfo = gpu_h.GPUTextureCreateInfo;
+pub const GPUBufferCreateInfo = gpu_h.GPUBufferCreateInfo;
+pub const GPUTransferBufferCreateInfo = gpu_h.GPUTransferBufferCreateInfo;
+pub const GPURasterizerState = gpu_h.GPURasterizerState;
+pub const GPUMultisampleState = gpu_h.GPUMultisampleState;
+pub const GPUDepthStencilState = gpu_h.GPUDepthStencilState;
+pub const GPUColorTargetDescription = gpu_h.GPUColorTargetDescription;
+pub const GPUGraphicsPipelineTargetInfo = gpu_h.GPUGraphicsPipelineTargetInfo;
+pub const GPUGraphicsPipelineCreateInfo = gpu_h.GPUGraphicsPipelineCreateInfo;
+pub const GPUComputePipelineCreateInfo = gpu_h.GPUComputePipelineCreateInfo;
+pub const GPUColorTargetInfo = gpu_h.GPUColorTargetInfo;
+pub const GPUDepthStencilTargetInfo = gpu_h.GPUDepthStencilTargetInfo;
+pub const GPUBlitInfo = gpu_h.GPUBlitInfo;
+pub const GPUBufferBinding = gpu_h.GPUBufferBinding;
+pub const GPUTextureSamplerBinding = gpu_h.GPUTextureSamplerBinding;
+pub const GPUStorageBufferReadWriteBinding = gpu_h.GPUStorageBufferReadWriteBinding;
+pub const GPUStorageTextureReadWriteBinding = gpu_h.GPUStorageTextureReadWriteBinding;
+pub const gpuSupportsShaderFormats = gpu_h.gpuSupportsShaderFormats;
+pub const gpuSupportsProperties = gpu_h.gpuSupportsProperties;
+pub const createGPUDevice = gpu_h.createGPUDevice;
+pub const createGPUDeviceWithProperties = gpu_h.createGPUDeviceWithProperties;
+pub const destroyGPUDevice = gpu_h.destroyGPUDevice;
+pub const getNumGPUDrivers = gpu_h.getNumGPUDrivers;
+pub const getGPUDriver = gpu_h.getGPUDriver;
+pub const getGPUDeviceDriver = gpu_h.getGPUDeviceDriver;
+pub const getGPUShaderFormats = gpu_h.getGPUShaderFormats;
+pub const createGPUComputePipeline = gpu_h.createGPUComputePipeline;
+pub const createGPUGraphicsPipeline = gpu_h.createGPUGraphicsPipeline;
+pub const createGPUSampler = gpu_h.createGPUSampler;
+pub const createGPUShader = gpu_h.createGPUShader;
+pub const createGPUTexture = gpu_h.createGPUTexture;
+pub const createGPUBuffer = gpu_h.createGPUBuffer;
+pub const createGPUTransferBuffer = gpu_h.createGPUTransferBuffer;
+pub const setGPUBufferName = gpu_h.setGPUBufferName;
+pub const setGPUTextureName = gpu_h.setGPUTextureName;
+pub const insertGPUDebugLabel = gpu_h.insertGPUDebugLabel;
+pub const pushGPUDebugGroup = gpu_h.pushGPUDebugGroup;
+pub const popGPUDebugGroup = gpu_h.popGPUDebugGroup;
+pub const releaseGPUTexture = gpu_h.releaseGPUTexture;
+pub const releaseGPUSampler = gpu_h.releaseGPUSampler;
+pub const releaseGPUBuffer = gpu_h.releaseGPUBuffer;
+pub const releaseGPUTransferBuffer = gpu_h.releaseGPUTransferBuffer;
+pub const releaseGPUComputePipeline = gpu_h.releaseGPUComputePipeline;
+pub const releaseGPUShader = gpu_h.releaseGPUShader;
+pub const releaseGPUGraphicsPipeline = gpu_h.releaseGPUGraphicsPipeline;
+pub const acquireGPUCommandBuffer = gpu_h.acquireGPUCommandBuffer;
+pub const pushGPUVertexUniformData = gpu_h.pushGPUVertexUniformData;
+pub const pushGPUFragmentUniformData = gpu_h.pushGPUFragmentUniformData;
+pub const pushGPUComputeUniformData = gpu_h.pushGPUComputeUniformData;
+pub const beginGPURenderPass = gpu_h.beginGPURenderPass;
+pub const bindGPUGraphicsPipeline = gpu_h.bindGPUGraphicsPipeline;
+pub const setGPUViewport = gpu_h.setGPUViewport;
+pub const setGPUScissor = gpu_h.setGPUScissor;
+pub const setGPUBlendConstants = gpu_h.setGPUBlendConstants;
+pub const setGPUStencilReference = gpu_h.setGPUStencilReference;
+pub const bindGPUVertexBuffers = gpu_h.bindGPUVertexBuffers;
+pub const bindGPUIndexBuffer = gpu_h.bindGPUIndexBuffer;
+pub const bindGPUVertexSamplers = gpu_h.bindGPUVertexSamplers;
+pub const bindGPUVertexStorageTextures = gpu_h.bindGPUVertexStorageTextures;
+pub const bindGPUVertexStorageBuffers = gpu_h.bindGPUVertexStorageBuffers;
+pub const bindGPUFragmentSamplers = gpu_h.bindGPUFragmentSamplers;
+pub const bindGPUFragmentStorageTextures = gpu_h.bindGPUFragmentStorageTextures;
+pub const bindGPUFragmentStorageBuffers = gpu_h.bindGPUFragmentStorageBuffers;
+pub const drawGPUIndexedPrimitives = gpu_h.drawGPUIndexedPrimitives;
+pub const drawGPUPrimitives = gpu_h.drawGPUPrimitives;
+pub const drawGPUPrimitivesIndirect = gpu_h.drawGPUPrimitivesIndirect;
+pub const drawGPUIndexedPrimitivesIndirect = gpu_h.drawGPUIndexedPrimitivesIndirect;
+pub const endGPURenderPass = gpu_h.endGPURenderPass;
+pub const beginGPUComputePass = gpu_h.beginGPUComputePass;
+pub const bindGPUComputePipeline = gpu_h.bindGPUComputePipeline;
+pub const bindGPUComputeSamplers = gpu_h.bindGPUComputeSamplers;
+pub const bindGPUComputeStorageTextures = gpu_h.bindGPUComputeStorageTextures;
+pub const bindGPUComputeStorageBuffers = gpu_h.bindGPUComputeStorageBuffers;
+pub const dispatchGPUCompute = gpu_h.dispatchGPUCompute;
+pub const dispatchGPUComputeIndirect = gpu_h.dispatchGPUComputeIndirect;
+pub const endGPUComputePass = gpu_h.endGPUComputePass;
+pub const mapGPUTransferBuffer = gpu_h.mapGPUTransferBuffer;
+pub const unmapGPUTransferBuffer = gpu_h.unmapGPUTransferBuffer;
+pub const beginGPUCopyPass = gpu_h.beginGPUCopyPass;
+pub const uploadToGPUTexture = gpu_h.uploadToGPUTexture;
+pub const uploadToGPUBuffer = gpu_h.uploadToGPUBuffer;
+pub const copyGPUTextureToTexture = gpu_h.copyGPUTextureToTexture;
+pub const copyGPUBufferToBuffer = gpu_h.copyGPUBufferToBuffer;
+pub const downloadFromGPUTexture = gpu_h.downloadFromGPUTexture;
+pub const downloadFromGPUBuffer = gpu_h.downloadFromGPUBuffer;
+pub const endGPUCopyPass = gpu_h.endGPUCopyPass;
+pub const generateMipmapsForGPUTexture = gpu_h.generateMipmapsForGPUTexture;
+pub const blitGPUTexture = gpu_h.blitGPUTexture;
+pub const windowSupportsGPUSwapchainComposition = gpu_h.windowSupportsGPUSwapchainComposition;
+pub const windowSupportsGPUPresentMode = gpu_h.windowSupportsGPUPresentMode;
+pub const claimWindowForGPUDevice = gpu_h.claimWindowForGPUDevice;
+pub const releaseWindowFromGPUDevice = gpu_h.releaseWindowFromGPUDevice;
+pub const setGPUSwapchainParameters = gpu_h.setGPUSwapchainParameters;
+pub const setGPUAllowedFramesInFlight = gpu_h.setGPUAllowedFramesInFlight;
+pub const getGPUSwapchainTextureFormat = gpu_h.getGPUSwapchainTextureFormat;
+pub const acquireGPUSwapchainTexture = gpu_h.acquireGPUSwapchainTexture;
+pub const waitForGPUSwapchain = gpu_h.waitForGPUSwapchain;
+pub const waitAndAcquireGPUSwapchainTexture = gpu_h.waitAndAcquireGPUSwapchainTexture;
+pub const submitGPUCommandBuffer = gpu_h.submitGPUCommandBuffer;
+pub const submitGPUCommandBufferAndAcquireFence = gpu_h.submitGPUCommandBufferAndAcquireFence;
+pub const cancelGPUCommandBuffer = gpu_h.cancelGPUCommandBuffer;
+pub const waitForGPUIdle = gpu_h.waitForGPUIdle;
+pub const waitForGPUFences = gpu_h.waitForGPUFences;
+pub const queryGPUFence = gpu_h.queryGPUFence;
+pub const releaseGPUFence = gpu_h.releaseGPUFence;
+pub const gpuTextureFormatTexelBlockSize = gpu_h.gpuTextureFormatTexelBlockSize;
+pub const gpuTextureSupportsFormat = gpu_h.gpuTextureSupportsFormat;
+pub const gpuTextureSupportsSampleCount = gpu_h.gpuTextureSupportsSampleCount;
+pub const calculateGPUTextureFormatSize = gpu_h.calculateGPUTextureFormatSize;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Thread Management (SDL_thread.h)
-//
 //--------------------------------------------------------------------------------------------------
+const thread_h = @import("sdl3/thread.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Thread Synchronization Primitives (SDL_mutex.h)
-//
 //--------------------------------------------------------------------------------------------------
+const mutex_h = @import("sdl3/mutex.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Atomic Operations (SDL_atomic.h)
-//
 //--------------------------------------------------------------------------------------------------
+const atomic_h = @import("sdl3/atomic.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Timer Support (SDL_timer.h)
-//
 //--------------------------------------------------------------------------------------------------
-/// Get the number of nanoseconds since SDL library initialization.
-pub const getTicksNS = SDL_GetTicksNS;
-extern fn SDL_GetTicksNS() u64;
-
-pub const getPerformanceCounter = SDL_GetPerformanceCounter;
-extern fn SDL_GetPerformanceCounter() u64;
-
-pub const getPerformanceFrequency = SDL_GetPerformanceFrequency;
-extern fn SDL_GetPerformanceFrequency() u64;
-
-pub const delay = SDL_Delay;
-extern fn SDL_Delay(ms: u32) void;
-
-pub const getTicks = SDL_GetTicks;
-extern fn SDL_GetTicks() u64;
+const timer_h = @import("sdl3/timer.zig");
+pub const getTicksNS = timer_h.getTicksNS;
+pub const getPerformanceCounter = timer_h.getPerformanceCounter;
+pub const getPerformanceFrequency = timer_h.getPerformanceFrequency;
+pub const delay = timer_h.delay;
+pub const getTicks = timer_h.getTicks;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Date and Time (SDL_time.h)
-//
 //--------------------------------------------------------------------------------------------------
-// TODO
+const time_h = @import("sdl3/time.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Filesystem Access (SDL_filesystem.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub fn getBasePath() ?[]const u8 {
-    return if (SDL_GetBasePath()) |path| std.mem.span(path) else null;
-}
-extern fn SDL_GetBasePath() [*c]const u8;
-
-pub fn getPrefPath(org: [:0]const u8, app: [:0]const u8) ?[]const u8 {
-    return if (SDL_GetPrefPath(org.ptr, app.ptr)) |path| std.mem.span(path) else null;
-}
-extern fn SDL_GetPrefPath(org: [*c]const u8, app: [*c]const u8) [*c]const u8;
+const filesystem_h = @import("sdl3/filesystem.zig");
+pub const getBasePath = filesystem_h.getBasePath;
+pub const getPrefPath = filesystem_h.getPrefPath;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Storage Abstraction (SDL_storage.h)
-//
 //--------------------------------------------------------------------------------------------------
-// TODO
+const storage_h = @import("sdl3/storage.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // I/O Streams (SDL_iostream.h)
-//
 //--------------------------------------------------------------------------------------------------
+const iostream_h = @import("sdl3/iostream.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Async I/O (SDL_asyncio.h)
-//
 //--------------------------------------------------------------------------------------------------
-// TODO
+const asyncio_h = @import("sdl3/asyncio.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Shared Object/DLL Management (SDL_loadso.h)
-//
 //--------------------------------------------------------------------------------------------------
+const loadso_h = @import("sdl3/loadso.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Platform Detection (SDL_platform.h)
-//
 //--------------------------------------------------------------------------------------------------
+const platform_h = @import("sdl3/platform.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // CPU Feature Detection (SDL_cpuinfo.h)
-//
 //--------------------------------------------------------------------------------------------------
+const cpuinfo_h = @import("sdl3/cpuinfo.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
-// Compiler Intrinsics Detection (SDL_intrin.h)
-//
-//--------------------------------------------------------------------------------------------------
-// TODO
-
-//--------------------------------------------------------------------------------------------------
-//
 // Byte Order and Byte Swapping (SDL_endian.h)
-//
 //--------------------------------------------------------------------------------------------------
-// TODO
+const endian_h = @import("sdl3/endian.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Bit Manipulation (SDL_bits.h)
-//
 //--------------------------------------------------------------------------------------------------
-// TODO
+const bits_h = @import("sdl3/bits.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Power Management Status (SDL_power.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const PowerState = enum(c_int) {
-    @"error" = -1,
-    unknown,
-    on_battery,
-    no_battery,
-    charging,
-    charged,
-};
-
-// TODO: SDL_GetPowerInfo
+const power_h = @import("sdl3/power.zig");
+pub const PowerState = power_h.PowerState;
 
 //--------------------------------------------------------------------------------------------------
-//
 // Process Control (SDL_process.h)
-//
 //--------------------------------------------------------------------------------------------------
-// TODO
+const process_h = @import("sdl3/process.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Message Boxes (SDL_messagebox.h)
-//
 //--------------------------------------------------------------------------------------------------
-pub const MessageBoxFlags = packed struct(u32) {
-    err: bool = false,
-    warning: bool = false,
-    information: bool = false,
-    buttons_left_to_right: bool = false,
-    buttons_right_to_left: bool = false,
-    __unused: u27 = 0,
-};
-
-pub fn showSimpleMessageBox(
-    flags: MessageBoxFlags,
-    title: ?[:0]const u8,
-    message: ?[:0]const u8,
-    window: ?*Window,
-) Error!void {
-    if (!SDL_ShowSimpleMessageBox(flags, @ptrCast(title), @ptrCast(message), window)) {
-        return makeError();
-    }
-}
-extern fn SDL_ShowSimpleMessageBox(
-    flags: MessageBoxFlags,
-    title: [*c]const u8,
-    message: [*c]const u8,
-    window: ?*Window,
-) bool;
+const messagebox_h = @import("sdl3/messagebox.zig");
+pub const MessageBoxFlags = messagebox_h.MessageBoxFlags;
+pub const showSimpleMessageBox = messagebox_h.showSimpleMessageBox;
 
 //--------------------------------------------------------------------------------------------------
-//
 // File Dialogs (SDL_dialog.h)
-//
 //--------------------------------------------------------------------------------------------------
-// TODO
+const dialog_h = @import("sdl3/dialog.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // System Tray (SDL_tray.h)
-//
 //--------------------------------------------------------------------------------------------------
-// TODO
+const tray_h = @import("sdl3/tray.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Locale Info (SDL_locale.h)
-//
 //--------------------------------------------------------------------------------------------------
-// TODO
+const locale_h = @import("sdl3/locale.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Platform-specific Functionality (SDL_system.h)
-//
 //--------------------------------------------------------------------------------------------------
-// TODO
+const system_h = @import("sdl3/system.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Standard Library Functionality (SDL_stdinc.h)
-//
 //--------------------------------------------------------------------------------------------------
-
-/// Allocate uinitialized memory.
-///
-/// The allocated memory returned by this function must be freed with SDL_free().
-///
-/// If `size` is 0, it will be set to 1.
-///
-/// If you want to allocate memory aligned to a specific alignment, consider using SDL_aligned_alloc().
-///
-/// Returns a pointer to the allocated memory, or NULL if allocation failed.
-pub const malloc = SDL_malloc;
-extern fn SDL_malloc(isize) *anyopaque;
-
-/// Free allocated memory.
-/// The pointer is no longer valid after this call and cannot be dereferenced  anymore.
-pub const free = SDL_free;
-extern fn SDL_free(*anyopaque) void;
-
-// TODO
-// - Declare SDL_malloc_func, SDL_calloc_func, SDL_realloc_func and SDL_free_func
-// - Zig Allocator interface
+const stdinc_h = @import("sdl3/stdinc.zig");
+pub const malloc = stdinc_h.malloc;
+pub const free = stdinc_h.free;
 
 //--------------------------------------------------------------------------------------------------
-//
 // GUIDs (SDL_guid.h)
-//
 //--------------------------------------------------------------------------------------------------
-// TODO
+const guid_h = @import("sdl3/guid.zig");
 
 //--------------------------------------------------------------------------------------------------
-//
 // Miscellaneous (SDL_misc.h)
-//
 //--------------------------------------------------------------------------------------------------
-// TODO
+const misc_h = @import("sdl3/misc.zig");
+
+const modules = .{
+    main_h,
+    init_h,
+    hints_h,
+    properties_h,
+    error_h,
+    log_h,
+    assert_h,
+    version_h,
+    video_h,
+    render_h,
+    pixels_h,
+    blendmode_h,
+    rect_h,
+    surface_h,
+    clipboard_h,
+    vulkan_h,
+    metal_h,
+    camera_h,
+    events_h,
+    keyboard_h,
+    scancode_h,
+    keycode_h,
+    mouse_h,
+    joystick_h,
+    gamepad_h,
+    touch_h,
+    pen_h,
+    sensor_h,
+    hidapi_h,
+    haptic_h,
+    audio_h,
+    gpu_h,
+    thread_h,
+    mutex_h,
+    atomic_h,
+    timer_h,
+    time_h,
+    filesystem_h,
+    storage_h,
+    iostream_h,
+    asyncio_h,
+    loadso_h,
+    platform_h,
+    cpuinfo_h,
+    endian_h,
+    bits_h,
+    power_h,
+    process_h,
+    messagebox_h,
+    dialog_h,
+    tray_h,
+    locale_h,
+    system_h,
+    stdinc_h,
+    guid_h,
+    misc_h,
+};
