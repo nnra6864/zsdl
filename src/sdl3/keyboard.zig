@@ -230,9 +230,9 @@ pub const Capitalization = enum(c_int) {
 ///
 /// These are the supported properties:
 ///
-/// - `TextInputType.Properties.number` - an `TextInputType` value that
+/// - `TextInputType.Properties.number` - a `TextInputType` value that
 ///   describes text being input, defaults to `TextInputType.text`.
-/// - `prop_textinput_capitalization_number` - an `Capitalization` value
+/// - `prop_textinput_capitalization_number` - a `Capitalization` value
 ///   that describes how text should be capitalized, defaults to
 ///   `Capitalization.sentences` for normal text entry, `Capitalization.words` for
 ///   `TextInputType.text_name`, and `Capitalization.none` for e-mail

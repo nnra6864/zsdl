@@ -1104,7 +1104,7 @@ extern fn SDL_GetWindows(count: ?*c_int) ?[*]*Window;
 /// If `WindowFlags.metal` is specified on an OS that does not support Metal,
 /// `createWindow` will fail.
 ///
-/// If you intend to use this window with an `Renderer`, you should use
+/// If you intend to use this window with a `Renderer`, you should use
 /// `createWindowAndRenderer` instead of this function, to avoid window
 /// flicker.
 ///
@@ -1210,7 +1210,7 @@ extern fn SDL_CreatePopupWindow(parent: ?*Window, offset_x: c_int, offset_y: c_i
 ///   with grabbed mouse focus
 /// - `Window.Properties.create_opengl_boolean`: true if the window will be used
 ///   with OpenGL rendering
-/// - `Window.Properties.create_parent_pointer`: an `Window` that will be the
+/// - `Window.Properties.create_parent_pointer`: a `Window` that will be the
 ///   parent of this window, required for windows with the "tooltip", "menu",
 ///   and "modal" properties
 /// - `Window.Properties.create_resizable_boolean`: true if the window should be
@@ -1226,11 +1226,11 @@ extern fn SDL_CreatePopupWindow(parent: ?*Window, offset_x: c_int, offset_y: c_i
 ///   with Vulkan rendering
 /// - `Window.Properties.create_width_number`: the width of the window
 /// - `Window.Properties.create_x_number`: the x position of the window, or
-///   SDL_WINDOWPOS_CENTERED, defaults to SDL_WINDOWPOS_UNDEFINED. This is
+///   `pos_centered`, defaults to `pos_undefined`. This is
 ///   relative to the parent for windows with the "tooltip" or "menu" property
 ///   set.
 /// - `Window.Properties.create_y_number`: the y position of the window, or
-///   SDL_WINDOWPOS_CENTERED, defaults to SDL_WINDOWPOS_UNDEFINED. This is
+///   `pos_centered`, defaults to `pos_undefined`. This is
 ///   relative to the parent for windows with the "tooltip" or "menu" property
 ///   set.
 ///
@@ -1274,7 +1274,7 @@ extern fn SDL_CreatePopupWindow(parent: ?*Window, offset_x: c_int, offset_y: c_i
 /// Windows with the "tooltip" and "menu" properties are popup windows and have
 /// the behaviors and guidelines outlined in `createPopupWindow`.
 ///
-/// If this window is being created to be used with an `Renderer`, you should
+/// If this window is being created to be used with a `Renderer`, you should
 /// not add a graphics API specific property
 /// (`Window.Properties.create_opengl_boolean`, etc), as SDL will handle that
 /// internally when it chooses a renderer. However, SDL might need to recreate
@@ -1808,12 +1808,12 @@ extern fn SDL_GetWindowSurface(window: *Window) ?*sdl.Surface;
 /// Toggle VSync for the window surface.
 ///
 /// When a window surface is created, vsync defaults to
-/// SDL_WINDOW_SURFACE_VSYNC_DISABLED.
+/// `window_surface_vsync_disabled`.
 ///
 /// The `vsync` parameter can be 1 to synchronize present with every vertical
 /// refresh, 2 to synchronize present with every second vertical refresh, etc.,
-/// SDL_WINDOW_SURFACE_VSYNC_ADAPTIVE for late swap tearing (adaptive vsync),
-/// or SDL_WINDOW_SURFACE_VSYNC_DISABLED to disable. Not every value is
+/// `window_surface_vsync_adaptive` for late swap tearing (adaptive vsync),
+/// or `window_surface_vsync_disabled` to disable. Not every value is
 /// supported by every driver, so you should check the return value to see
 /// whether the requested setting is supported.
 pub fn setWindowSurfaceVSync(window: *Window, vsync: c_int) Error!void {

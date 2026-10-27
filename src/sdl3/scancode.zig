@@ -263,7 +263,7 @@ pub const Scancode = enum(u32) {
     ralt = 230,
     /// windows, command (apple), meta
     rgui = 231,
-    /// I'm not sure if this is really not covered by any of the above, but since there's a special SDL_KMOD_MODE for it I'm adding it here
+    /// I'm not sure if this is really not covered by any of the above, but since there's a special `Keymod.mode` for it I'm adding it here
     mode = 257,
     /// Sleep
     sleep = 258,

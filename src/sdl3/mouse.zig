@@ -275,7 +275,7 @@ extern fn SDL_GetWindowRelativeMouseMode(window: *sdl.Window) bool;
 /// capture will be disabled automatically.
 ///
 /// While capturing is enabled, the current window will have the
-/// SDL_WINDOW_MOUSE_CAPTURE flag set.
+/// `WindowFlags.mouse_capture` flag set.
 ///
 /// Please note that SDL will attempt to "auto capture" the mouse while the
 /// user is pressing a button; this is to try and make mouse behavior more

@@ -301,7 +301,7 @@ extern fn SDL_CreateRenderer(window: *sdl.Window, name: ?[*:0]const u8) ?*Render
 ///   displayed, required if this isn't a software renderer using a surface
 /// - `Renderer.Properties.create_surface_pointer`: the surface where rendering
 ///   is displayed, if you want a software renderer without a window
-/// - `Renderer.Properties.create_output_colorspace_number`: an `Colorspace`
+/// - `Renderer.Properties.create_output_colorspace_number`: a `Colorspace`
 ///   value describing the colorspace for output to the display, defaults to
 ///   `Colorspace.srgb`. The direct3d11, direct3d12, and metal renderers
 ///   support `Colorspace.srgb_linear`, which is a linear color space and
@@ -336,7 +336,7 @@ extern fn SDL_CreateRendererWithProperties(props: sdl.PropertiesId) ?*Renderer;
 /// Two other API which can be used to create `Renderer`:
 /// `createRenderer` and `createWindowAndRenderer`. These can _also_
 /// create a software renderer, but they are intended to be used with an
-/// `Window` as the final destination and not an `Surface`.
+/// `Window` as the final destination and not a `Surface`.
 pub fn createSoftwareRenderer(surface: *sdl.Surface) Error!*Renderer {
     return SDL_CreateSoftwareRenderer(surface) orelse makeError();
 }
@@ -376,7 +376,7 @@ extern fn SDL_GetRendererName(renderer: *Renderer) ?[*:0]const u8;
 /// - `Renderer.Properties.texture_formats_pointer`: a (const `PixelFormat` *)
 ///   array of pixel formats, terminated with `PixelFormat.unknown`,
 ///   representing the available texture formats for this renderer.
-/// - `Renderer.Properties.output_colorspace_number`: an `Colorspace` value
+/// - `Renderer.Properties.output_colorspace_number`: a `Colorspace` value
 ///   describing the colorspace for output to the display, defaults to
 ///   `Colorspace.srgb`.
 /// - `Renderer.Properties.hdr_enabled_boolean`: true if the output colorspace is
@@ -493,7 +493,7 @@ extern fn SDL_CreateTextureFromSurface(renderer: *Renderer, surface: *sdl.Surfac
 ///
 /// These are the supported properties:
 ///
-/// - `Texture.Properties.create_colorspace_number`: an `Colorspace` value
+/// - `Texture.Properties.create_colorspace_number`: a `Colorspace` value
 ///   describing the texture colorspace, defaults to `Colorspace.srgb_linear`
 ///   for floating point textures, `Colorspace.hdr10` for 10-bit textures,
 ///   `Colorspace.srgb` for other RGB textures and `Colorspace.jpeg` for
@@ -590,7 +590,7 @@ extern fn SDL_CreateTextureWithProperties(renderer: *Renderer, props: sdl.Proper
 ///
 /// The following read-only properties are provided by SDL:
 ///
-/// - `Texture.Properties.colorspace_number`: an `Colorspace` value describing
+/// - `Texture.Properties.colorspace_number`: a `Colorspace` value describing
 ///   the texture colorspace.
 /// - `Texture.Properties.format_number`: one of the enumerated values in
 ///   `PixelFormat`.
@@ -669,7 +669,7 @@ pub fn getTextureProperties(texture: *Texture) Error!sdl.PropertiesId {
 }
 extern fn SDL_GetTextureProperties(texture: *Texture) sdl.PropertiesId;
 
-/// Get the renderer that created an `Texture`.
+/// Get the renderer that created a `Texture`.
 pub fn getRendererFromTexture(texture: *Texture) Error!*Renderer {
     return SDL_GetRendererFromTexture(texture) orelse makeError();
 }
@@ -860,7 +860,7 @@ extern fn SDL_LockTexture(texture: *Texture, rect: ?*const sdl.Rect, pixels: **a
 /// Lock a portion of the texture for **write-only** pixel access, and expose
 /// it as a SDL surface.
 ///
-/// Besides providing an `Surface` instead of raw pixel data, this function
+/// Besides providing a `Surface` instead of raw pixel data, this function
 /// operates like `lockTexture`.
 ///
 /// As an optimization, the pixels made available for editing don't necessarily
@@ -1395,7 +1395,7 @@ extern fn SDL_DestroyRenderer(renderer: *Renderer) void;
 ///
 /// You do not need to (and in fact, shouldn't) call this function unless you
 /// are planning to call into OpenGL/Direct3D/Metal/whatever directly, in
-/// addition to using an `Renderer`.
+/// addition to using a `Renderer`.
 ///
 /// This is for a very-specific case: if you are using SDL's render API, and
 /// you plan to make OpenGL/D3D/whatever calls in addition to SDL render API
@@ -1456,12 +1456,12 @@ extern fn SDL_AddVulkanRenderSemaphores(renderer: *Renderer, wait_stage_mask: u3
 
 /// Toggle VSync of the given renderer.
 ///
-/// When a renderer is created, vsync defaults to SDL_RENDERER_VSYNC_DISABLED.
+/// When a renderer is created, vsync defaults to `renderer_vsync_disabled`.
 ///
 /// The `vsync` parameter can be 1 to synchronize present with every vertical
 /// refresh, 2 to synchronize present with every second vertical refresh, etc.,
-/// SDL_RENDERER_VSYNC_ADAPTIVE for late swap tearing (adaptive vsync), or
-/// SDL_RENDERER_VSYNC_DISABLED to disable. Not every value is supported by
+/// `renderer_vsync_adaptive` for late swap tearing (adaptive vsync), or
+/// `renderer_vsync_disabled` to disable. Not every value is supported by
 /// every driver, so you should check the return value to see whether the
 /// requested setting is supported.
 pub fn setRenderVSync(renderer: *Renderer, vsync: c_int) Error!void {
@@ -1486,7 +1486,7 @@ pub const debug_text_font_character_size = 8;
 
 /// Draw debug text to a `Renderer`.
 ///
-/// This function will render a string of text to an `Renderer`. Note that
+/// This function will render a string of text to a `Renderer`. Note that
 /// this is a convenience function for debugging, with severe limitations, and
 /// not intended to be used for production apps and games.
 ///

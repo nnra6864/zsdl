@@ -321,7 +321,7 @@ extern fn SDL_IsJoystickVirtual(instance_id: JoystickId) bool;
 ///
 /// Note that when sending trigger axes, you should scale the value to the full
 /// range of Sint16. For example, a trigger at rest would have the value of
-/// SDL_JOYSTICK_AXIS_MIN.
+/// `joystick_axis_min`.
 pub fn setJoystickVirtualAxis(joystick: *Joystick, axis: c_int, value: i16) Error!void {
     if (!SDL_SetJoystickVirtualAxis(joystick, axis, value)) return makeError();
 }

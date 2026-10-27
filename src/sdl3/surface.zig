@@ -6,7 +6,7 @@ const sdl = @import("../sdl3.zig");
 const Error = sdl.Error;
 const makeError = sdl.makeError;
 
-/// The flags on an `Surface`.
+/// The flags on a `Surface`.
 ///
 /// These are generally considered read-only.
 pub const SurfaceFlags = packed struct(u32) {
@@ -420,7 +420,7 @@ extern fn SDL_GetSurfaceAlphaMod(surface: *Surface, alpha: *u8) bool;
 ///
 /// To copy a surface to another surface (or texture) without blending with the
 /// existing data, the blendmode of the SOURCE surface should be set to
-/// SDL_BLENDMODE_NONE.
+/// `BlendMode.none`.
 pub fn setSurfaceBlendMode(surface: *Surface, blendMode: sdl.BlendMode) Error!void {
     if (!SDL_SetSurfaceBlendMode(surface, blendMode)) return makeError();
 }

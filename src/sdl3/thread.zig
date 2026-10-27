@@ -96,7 +96,7 @@ pub fn createThread(@"fn": ThreadFunction, name: [:0]const u8, data: ?*anyopaque
 ///
 /// These are the supported properties:
 ///
-/// - `Thread.Properties.create_entry_function_pointer`: an `ThreadFunction`
+/// - `Thread.Properties.create_entry_function_pointer`: a `ThreadFunction`
 ///   value that will be called at the start of the new thread's life.
 ///   Required.
 /// - `Thread.Properties.create_name_string`: the name of the new thread, which

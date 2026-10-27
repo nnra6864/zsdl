@@ -1136,7 +1136,7 @@ pub const GPUVertexBufferDescription = extern struct {
 
 /// A structure specifying a vertex attribute.
 ///
-/// All vertex attribute locations provided to an `GPUVertexInputState` must
+/// All vertex attribute locations provided to a `GPUVertexInputState` must
 /// be unique.
 pub const GPUVertexAttribute = extern struct {
     /// The shader input location index.
@@ -1555,7 +1555,7 @@ pub const GPUBlitInfo = extern struct {
     destination: GPUBlitRegion,
     /// What is done with the contents of the destination before the blit.
     load_op: GPULoadOp,
-    /// The color to clear the destination region to before the blit. Ignored if load_op is not SDL_GPU_LOADOP_CLEAR.
+    /// The color to clear the destination region to before the blit. Ignored if load_op is not `GPULoadOp.clear`.
     clear_color: sdl.FColor,
     /// The flip mode for the source region.
     flip_mode: sdl.FlipMode,
@@ -1571,7 +1571,7 @@ pub const GPUBlitInfo = extern struct {
 
 /// A structure specifying parameters in a buffer binding call.
 pub const GPUBufferBinding = extern struct {
-    /// The buffer to bind. Must have been created with SDL_GPU_BUFFERUSAGE_VERTEX for SDL_BindGPUVertexBuffers, or SDL_GPU_BUFFERUSAGE_INDEX for SDL_BindGPUIndexBuffer.
+    /// The buffer to bind. Must have been created with `GPUBufferUsageFlags.vertex` for `bindGPUVertexBuffers`, or `GPUBufferUsageFlags.index` for `bindGPUIndexBuffer`.
     buffer: *GPUBuffer,
     /// The starting byte of the data to bind in the buffer.
     offset: u32,
@@ -1579,7 +1579,7 @@ pub const GPUBufferBinding = extern struct {
 
 /// A structure specifying parameters in a sampler binding call.
 pub const GPUTextureSamplerBinding = extern struct {
-    /// The texture to bind. Must have been created with SDL_GPU_TEXTUREUSAGE_SAMPLER.
+    /// The texture to bind. Must have been created with `GPUTextureUsageFlags.sampler`.
     texture: *GPUTexture,
     /// The sampler to bind.
     sampler: *GPUSampler,
@@ -1588,7 +1588,7 @@ pub const GPUTextureSamplerBinding = extern struct {
 /// A structure specifying parameters related to binding buffers in a compute
 /// pass.
 pub const GPUStorageBufferReadWriteBinding = extern struct {
-    /// The buffer to bind. Must have been created with SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_WRITE.
+    /// The buffer to bind. Must have been created with `GPUBufferUsageFlags.compute_storage_write`.
     buffer: *GPUBuffer,
     /// true cycles the buffer if it is already bound.
     cycle: bool,
@@ -1601,7 +1601,7 @@ pub const GPUStorageBufferReadWriteBinding = extern struct {
 /// A structure specifying parameters related to binding textures in a compute
 /// pass.
 pub const GPUStorageTextureReadWriteBinding = extern struct {
-    /// The texture to bind. Must have been created with SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_WRITE or SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_SIMULTANEOUS_READ_WRITE.
+    /// The texture to bind. Must have been created with `GPUTextureUsageFlags.compute_storage_write` or `GPUTextureUsageFlags.compute_storage_simultaneous_read_write`.
     texture: *GPUTexture,
     /// The mip level index to bind.
     mip_level: u32,

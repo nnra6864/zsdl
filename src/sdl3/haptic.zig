@@ -189,9 +189,9 @@ pub const haptic_infinity: u32 = 4294967295;
 ///
 /// Directions can be specified by:
 ///
-/// - SDL_HAPTIC_POLAR : Specified by polar coordinates.
-/// - SDL_HAPTIC_CARTESIAN : Specified by cartesian coordinates.
-/// - SDL_HAPTIC_SPHERICAL : Specified by spherical coordinates.
+/// - `HapticDirectionType.polar` : Specified by polar coordinates.
+/// - `HapticDirectionType.cartesian` : Specified by cartesian coordinates.
+/// - `HapticDirectionType.spherical` : Specified by spherical coordinates.
 ///
 /// Cardinal directions of the haptic device are relative to the positioning of
 /// the device. North is considered to be away from the user.
@@ -225,8 +225,8 @@ pub const haptic_infinity: u32 = 4294967295;
 ///                 ---ooO-(_)-Ooo---
 /// ```
 ///
-/// If type is SDL_HAPTIC_POLAR, direction is encoded by hundredths of a degree
-/// starting north and turning clockwise. SDL_HAPTIC_POLAR only uses the first
+/// If type is `HapticDirectionType.polar`, direction is encoded by hundredths of a degree
+/// starting north and turning clockwise. `HapticDirectionType.polar` only uses the first
 /// `dir` parameter. The cardinal directions would be:
 ///
 /// - North: 0 (0 degrees)
@@ -234,8 +234,8 @@ pub const haptic_infinity: u32 = 4294967295;
 /// - South: 18000 (180 degrees)
 /// - West: 27000 (270 degrees)
 ///
-/// If type is SDL_HAPTIC_CARTESIAN, direction is encoded by three positions (X
-/// axis, Y axis and Z axis (with 3 axes)). SDL_HAPTIC_CARTESIAN uses the first
+/// If type is `HapticDirectionType.cartesian`, direction is encoded by three positions (X
+/// axis, Y axis and Z axis (with 3 axes)). `HapticDirectionType.cartesian` uses the first
 /// three `dir` parameters. The cardinal directions would be:
 ///
 /// - North: 0,-1, 0
@@ -247,7 +247,7 @@ pub const haptic_infinity: u32 = 4294967295;
 /// unused. In cartesian encoding (1, 2) would be the same as (2, 4), you can
 /// use any multiple you want, only the direction matters.
 ///
-/// If type is SDL_HAPTIC_SPHERICAL, direction is encoded by two rotations. The
+/// If type is `HapticDirectionType.spherical`, direction is encoded by two rotations. The
 /// first two `dir` parameters are used. The `dir` parameters are as follows
 /// (all values are in hundredths of degrees):
 ///
@@ -283,12 +283,12 @@ pub const HapticDirection = extern struct {
 
 /// A structure containing a template for a Constant effect.
 ///
-/// This struct is exclusively for the SDL_HAPTIC_CONSTANT effect.
+/// This struct is exclusively for the `haptic_constant` effect.
 ///
 /// A constant effect applies a constant force in the specified direction to
 /// the joystick.
 pub const HapticConstant = extern struct {
-    /// SDL_HAPTIC_CONSTANT
+    /// `haptic_constant`
     type: u16,
     /// Direction of the effect.
     direction: HapticDirection,
@@ -316,11 +316,11 @@ pub const HapticConstant = extern struct {
 ///
 /// The struct handles the following effects:
 ///
-/// - SDL_HAPTIC_SINE
-/// - SDL_HAPTIC_SQUARE
-/// - SDL_HAPTIC_TRIANGLE
-/// - SDL_HAPTIC_SAWTOOTHUP
-/// - SDL_HAPTIC_SAWTOOTHDOWN
+/// - `haptic_sine`
+/// - `haptic_square`
+/// - `haptic_triangle`
+/// - `haptic_sawtoothup`
+/// - `haptic_sawtoothdown`
 ///
 /// A periodic effect consists in a wave-shaped effect that repeats itself over
 /// time. The type determines the shape of the wave and the parameters
@@ -364,7 +364,7 @@ pub const HapticConstant = extern struct {
 ///     \|  \|  \|  \|  \|  \|  \|
 /// ```
 pub const HapticPeriodic = extern struct {
-    /// SDL_HAPTIC_SINE, SDL_HAPTIC_SQUARE SDL_HAPTIC_TRIANGLE, SDL_HAPTIC_SAWTOOTHUP or SDL_HAPTIC_SAWTOOTHDOWN
+    /// `haptic_sine`, `haptic_square` `haptic_triangle`, `haptic_sawtoothup` or `haptic_sawtoothdown`
     type: u16,
     /// Direction of the effect.
     direction: HapticDirection,
@@ -398,10 +398,10 @@ pub const HapticPeriodic = extern struct {
 ///
 /// The struct handles the following effects:
 ///
-/// - SDL_HAPTIC_SPRING: Effect based on axes position.
-/// - SDL_HAPTIC_DAMPER: Effect based on axes velocity.
-/// - SDL_HAPTIC_INERTIA: Effect based on axes acceleration.
-/// - SDL_HAPTIC_FRICTION: Effect based on axes movement.
+/// - `haptic_spring`: Effect based on axes position.
+/// - `haptic_damper`: Effect based on axes velocity.
+/// - `haptic_inertia`: Effect based on axes acceleration.
+/// - `haptic_friction`: Effect based on axes movement.
 ///
 /// Direction is handled by condition internals instead of a direction member.
 /// The condition effect specific members have three parameters. The first
@@ -411,7 +411,7 @@ pub const HapticPeriodic = extern struct {
 /// `HapticDirection` diagram for which side is positive and which is
 /// negative.
 pub const HapticCondition = extern struct {
-    /// SDL_HAPTIC_SPRING, SDL_HAPTIC_DAMPER, SDL_HAPTIC_INERTIA or SDL_HAPTIC_FRICTION
+    /// `haptic_spring`, `haptic_damper`, `haptic_inertia` or `haptic_friction`
     type: u16,
     /// Direction of the effect.
     direction: HapticDirection,
@@ -439,14 +439,14 @@ pub const HapticCondition = extern struct {
 
 /// A structure containing a template for a Ramp effect.
 ///
-/// This struct is exclusively for the SDL_HAPTIC_RAMP effect.
+/// This struct is exclusively for the `haptic_ramp` effect.
 ///
 /// The ramp effect starts at start strength and ends at end strength. It
 /// augments in linear fashion. If you use attack and fade with a ramp the
 /// effects get added to the ramp effect making the effect become quadratic
 /// instead of linear.
 pub const HapticRamp = extern struct {
-    /// SDL_HAPTIC_RAMP
+    /// `haptic_ramp`
     type: u16,
     /// Direction of the effect.
     direction: HapticDirection,
@@ -474,13 +474,13 @@ pub const HapticRamp = extern struct {
 
 /// A structure containing a template for a Left/Right effect.
 ///
-/// This struct is exclusively for the SDL_HAPTIC_LEFTRIGHT effect.
+/// This struct is exclusively for the `haptic_leftright` effect.
 ///
 /// The Left/Right effect is used to explicitly control the large and small
 /// motors, commonly found in modern game controllers. The small (right) motor
 /// is high frequency, and the large (left) motor is low frequency.
 pub const HapticLeftRight = extern struct {
-    /// SDL_HAPTIC_LEFTRIGHT
+    /// `haptic_leftright`
     type: u16,
     /// Duration of the effect in milliseconds.
     length: u32,
@@ -490,9 +490,9 @@ pub const HapticLeftRight = extern struct {
     small_magnitude: u16,
 };
 
-/// A structure containing a template for the SDL_HAPTIC_CUSTOM effect.
+/// A structure containing a template for the `haptic_custom` effect.
 ///
-/// This struct is exclusively for the SDL_HAPTIC_CUSTOM effect.
+/// This struct is exclusively for the `haptic_custom` effect.
 ///
 /// A custom force feedback effect is much like a periodic effect, where the
 /// application can define its exact shape. You will have to allocate the data
@@ -501,7 +501,7 @@ pub const HapticLeftRight = extern struct {
 /// If channels is one, the effect is rotated using the defined direction.
 /// Otherwise it uses the samples in data for the different axes.
 pub const HapticCustom = extern struct {
-    /// SDL_HAPTIC_CUSTOM
+    /// `haptic_custom`
     type: u16,
     /// Direction of the effect.
     direction: HapticDirection,
@@ -536,12 +536,12 @@ pub const HapticCustom = extern struct {
 /// All values max at 32767 (0x7FFF). Signed values also can be negative. Time
 /// values unless specified otherwise are in milliseconds.
 ///
-/// You can also pass SDL_HAPTIC_INFINITY to length instead of a 0-32767 value.
+/// You can also pass `haptic_infinity` to length instead of a 0-32767 value.
 /// Neither delay, interval, attack_length nor fade_length support
-/// SDL_HAPTIC_INFINITY. Fade will also not be used since effect never ends.
+/// `haptic_infinity`. Fade will also not be used since effect never ends.
 ///
-/// Additionally, the SDL_HAPTIC_RAMP effect does not support a duration of
-/// SDL_HAPTIC_INFINITY.
+/// Additionally, the `haptic_ramp` effect does not support a duration of
+/// `haptic_infinity`.
 ///
 /// Button triggers may not be supported on all devices, it is advised to not
 /// use them if possible. Buttons start at index 1 instead of index 0 like the
@@ -769,9 +769,9 @@ extern fn SDL_UpdateHapticEffect(haptic: *Haptic, effect: c_int, data: *const Ha
 /// Run the haptic effect on its associated haptic device.
 ///
 /// To repeat the effect over and over indefinitely, set `iterations` to
-/// SDL_HAPTIC_INFINITY. (Repeats the envelope - attack and fade.) To make
+/// `haptic_infinity`. (Repeats the envelope - attack and fade.) To make
 /// one instance of the effect last indefinitely (so the effect does not fade),
-/// set the effect's `length` in its structure/union to SDL_HAPTIC_INFINITY
+/// set the effect's `length` in its structure/union to `haptic_infinity`
 /// instead.
 pub fn runHapticEffect(haptic: *Haptic, effect: c_int, iterations: u32) Error!void {
     if (!SDL_RunHapticEffect(haptic, effect, iterations)) return makeError();
@@ -793,13 +793,13 @@ extern fn SDL_DestroyHapticEffect(haptic: *Haptic, effect: c_int) void;
 
 /// Get the status of the current effect on the specified haptic device.
 ///
-/// Device must support the SDL_HAPTIC_STATUS feature.
+/// Device must support the `haptic_status` feature.
 pub const getHapticEffectStatus = SDL_GetHapticEffectStatus;
 extern fn SDL_GetHapticEffectStatus(haptic: *Haptic, effect: c_int) bool;
 
 /// Set the global gain of the specified haptic device.
 ///
-/// Device must support the SDL_HAPTIC_GAIN feature.
+/// Device must support the `haptic_gain` feature.
 ///
 /// The user may specify the maximum gain by setting the environment variable
 /// SDL_HAPTIC_GAIN_MAX which should be between 0 and 100. All calls to
@@ -815,7 +815,7 @@ extern fn SDL_SetHapticGain(haptic: *Haptic, gain: c_int) bool;
 /// Autocenter should be between 0 and 100. Setting it to 0 will disable
 /// autocentering.
 ///
-/// Device must support the SDL_HAPTIC_AUTOCENTER feature.
+/// Device must support the `haptic_autocenter` feature.
 pub fn setHapticAutocenter(haptic: *Haptic, autocenter: c_int) Error!void {
     if (!SDL_SetHapticAutocenter(haptic, autocenter)) return makeError();
 }
@@ -823,7 +823,7 @@ extern fn SDL_SetHapticAutocenter(haptic: *Haptic, autocenter: c_int) bool;
 
 /// Pause a haptic device.
 ///
-/// Device must support the SDL_HAPTIC_PAUSE feature. Call `resumeHaptic`
+/// Device must support the `haptic_pause` feature. Call `resumeHaptic`
 /// to resume playback.
 ///
 /// Do not modify the effects nor add new ones while the device is paused. That

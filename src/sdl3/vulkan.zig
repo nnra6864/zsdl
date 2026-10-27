@@ -64,7 +64,7 @@ pub const vk = struct {
     /// Get the address of the `vkGetInstanceProcAddr` function.
     ///
     /// This should be called after either calling `vk.loadLibrary` or
-    /// creating an `Window` with the SDL_WINDOW_VULKAN flag.
+    /// creating a `Window` with the `WindowFlags.vulkan` flag.
     ///
     /// The actual type of the returned function pointer is
     /// PFN_vkGetInstanceProcAddr, but that isn't available because the Vulkan
@@ -96,7 +96,7 @@ pub const vk = struct {
     /// Get the Vulkan instance extensions needed for vkCreateInstance.
     ///
     /// This should be called after either calling `vk.loadLibrary` or
-    /// creating an `Window` with the SDL_WINDOW_VULKAN flag.
+    /// creating a `Window` with the `WindowFlags.vulkan` flag.
     ///
     /// On return, the variable pointed to by `count` will be set to the number of
     /// elements returned, suitable for using with
@@ -114,7 +114,7 @@ pub const vk = struct {
 
     /// Create a Vulkan rendering surface for a window.
     ///
-    /// The `window` must have been created with the SDL_WINDOW_VULKAN flag and
+    /// The `window` must have been created with the `WindowFlags.vulkan` flag and
     /// `instance` must have been created with extensions returned by
     /// `vk.getInstanceExtensions` enabled.
     ///
@@ -134,7 +134,7 @@ pub const vk = struct {
     ///
     /// The `instance` must have been created with extensions returned by
     /// `vk.getInstanceExtensions` enabled and `surface` must have been
-    /// created successfully by an `vk.createSurface` call.
+    /// created successfully by a `vk.createSurface` call.
     ///
     /// If `allocator` is null, Vulkan will use the system default allocator. This
     /// argument is passed directly to Vulkan and isn't used by SDL itself.

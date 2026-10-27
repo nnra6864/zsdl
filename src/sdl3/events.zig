@@ -394,7 +394,7 @@ pub const MouseMotionEvent = extern struct {
     timestamp: u64,
     /// The window with mouse focus, if any
     window_id: sdl.WindowId,
-    /// The mouse instance id in relative mode, SDL_TOUCH_MOUSEID for touch events, or 0
+    /// The mouse instance id in relative mode, `touch_mouseid` for touch events, or 0
     which: sdl.MouseId,
     /// The current button state
     state: sdl.MouseButtonFlags,
@@ -417,7 +417,7 @@ pub const MouseButtonEvent = extern struct {
     timestamp: u64,
     /// The window with mouse focus, if any
     window_id: sdl.WindowId,
-    /// The mouse instance id in relative mode, SDL_TOUCH_MOUSEID for touch events, or 0
+    /// The mouse instance id in relative mode, `touch_mouseid` for touch events, or 0
     which: sdl.MouseId,
     /// The mouse button index
     button: u8,
@@ -601,8 +601,8 @@ pub const GamepadButtonEvent = extern struct {
 
 /// Gamepad device event structure (event.gdevice.*)
 ///
-/// Joysticks that are supported gamepads receive both an `JoyDeviceEvent`
-/// and an `GamepadDeviceEvent`.
+/// Joysticks that are supported gamepads receive both a `JoyDeviceEvent`
+/// and a `GamepadDeviceEvent`.
 ///
 /// SDL will send GAMEPAD_ADDED events for joysticks that are already plugged
 /// in during `init` and are recognized as gamepads. It will also send
@@ -759,7 +759,7 @@ pub const PenProximityEvent = extern struct {
 /// Depending on the hardware, you may get motion events when the pen is not
 /// touching a tablet, for tracking a pen even when it isn't drawing. You
 /// should listen for `EventType.pen_down` and `EventType.pen_up` events, or check
-/// `pen_state & SDL_PEN_INPUT_DOWN` to decide if a pen is "drawing" when
+/// `pen_state.down` to decide if a pen is "drawing" when
 /// dealing with pen motion.
 pub const PenMotionEvent = extern struct {
     /// `EventType.pen_motion`

@@ -175,12 +175,12 @@ pub const GamepadButtonLabel = enum(c_int) {
 
 /// The list of axes available on a gamepad
 ///
-/// Thumbstick axis values range from SDL_JOYSTICK_AXIS_MIN to
-/// SDL_JOYSTICK_AXIS_MAX, and are centered within ~8000 of zero, though
+/// Thumbstick axis values range from `joystick_axis_min` to
+/// `joystick_axis_max`, and are centered within ~8000 of zero, though
 /// advanced UI will allow users to set or autodetect the dead zone, which
 /// varies between gamepads.
 ///
-/// Trigger axis values range from 0 (released) to SDL_JOYSTICK_AXIS_MAX (fully
+/// Trigger axis values range from 0 (released) to `joystick_axis_max` (fully
 /// pressed) when reported by `getGamepadAxis`. Note that this is not the
 /// same range that will be reported by the lower-level `getJoystickAxis`.
 pub const GamepadAxis = enum(c_int) {
@@ -675,7 +675,7 @@ pub fn getGamepadTypeFromString(str: [:0]const u8) GamepadType {
 }
 extern fn SDL_GetGamepadTypeFromString(str: [*:0]const u8) GamepadType;
 
-/// Convert from an `GamepadType` enum to a string.
+/// Convert from a `GamepadType` enum to a string.
 pub fn getGamepadStringForType(@"type": GamepadType) ?[:0]const u8 {
     const str = SDL_GetGamepadStringForType(@"type") orelse return null;
     return std.mem.span(str);
@@ -697,7 +697,7 @@ pub fn getGamepadAxisFromString(str: [:0]const u8) GamepadAxis {
 }
 extern fn SDL_GetGamepadAxisFromString(str: [*:0]const u8) GamepadAxis;
 
-/// Convert from an `GamepadAxis` enum to a string.
+/// Convert from a `GamepadAxis` enum to a string.
 pub fn getGamepadStringForAxis(axis: GamepadAxis) ?[:0]const u8 {
     const str = SDL_GetGamepadStringForAxis(axis) orelse return null;
     return std.mem.span(str);
@@ -727,7 +727,7 @@ extern fn SDL_GamepadHasAxis(gamepad: *Gamepad, axis: GamepadAxis) bool;
 pub const getGamepadAxis = SDL_GetGamepadAxis;
 extern fn SDL_GetGamepadAxis(gamepad: *Gamepad, axis: GamepadAxis) i16;
 
-/// Convert a string into an `GamepadButton` enum.
+/// Convert a string into a `GamepadButton` enum.
 ///
 /// This function is called internally to translate `Gamepad` mapping strings
 /// for the underlying joystick device into the consistent `Gamepad` mapping.
@@ -738,7 +738,7 @@ pub fn getGamepadButtonFromString(str: [:0]const u8) GamepadButton {
 }
 extern fn SDL_GetGamepadButtonFromString(str: [*:0]const u8) GamepadButton;
 
-/// Convert from an `GamepadButton` enum to a string.
+/// Convert from a `GamepadButton` enum to a string.
 pub fn getGamepadStringForButton(button: GamepadButton) ?[:0]const u8 {
     const str = SDL_GetGamepadStringForButton(button) orelse return null;
     return std.mem.span(str);

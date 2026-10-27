@@ -13,7 +13,7 @@ const makeError = sdl.makeError;
 /// create a custom `Storage` object.
 ///
 /// It is not usually necessary to do this; SDL provides standard
-/// implementations for many things you might expect to do with an `Storage`.
+/// implementations for many things you might expect to do with a `Storage`.
 ///
 /// This structure should be initialized using SDL_INIT_INTERFACE()
 pub const StorageInterface = extern struct {
@@ -86,7 +86,7 @@ extern fn SDL_OpenFileStorage(path: ?[*:0]const u8) ?*Storage;
 /// Opens up a container using a client-provided storage interface.
 ///
 /// Applications do not need to use this function unless they are providing
-/// their own `Storage` implementation. If you just need an `Storage`, you
+/// their own `Storage` implementation. If you just need a `Storage`, you
 /// should use the built-in implementations in SDL, like `openTitleStorage`
 /// or `openUserStorage`.
 ///
@@ -204,7 +204,7 @@ extern fn SDL_GetStorageSpaceRemaining(storage: *Storage) u64;
 /// separator of '/'. Wildcard characters `*` and `?` never match a path
 /// separator.
 ///
-/// `flags` may be set to SDL_GLOB_CASEINSENSITIVE to make the pattern matching
+/// `flags` may be set to `GlobFlags.caseinsensitive` to make the pattern matching
 /// case-insensitive.
 ///
 /// The returned array is always null-terminated, for your iterating

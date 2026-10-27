@@ -29,7 +29,7 @@ pub const SensorId = enum(u32) { invalid = 0, _ };
 ///
 /// The accelerometer returns the current acceleration in SI meters per second
 /// squared. This measurement includes the force of gravity, so a device at
-/// rest will have an value of SDL_STANDARD_GRAVITY away from the center of the
+/// rest will have an value of `standard_gravity` away from the center of the
 /// earth, which is a positive Y value.
 pub const standard_gravity: f32 = 9.80665;
 
@@ -45,7 +45,7 @@ pub const standard_gravity: f32 = 9.80665;
 ///
 /// The accelerometer returns the current acceleration in SI meters per second
 /// squared. This measurement includes the force of gravity, so a device at
-/// rest will have an value of SDL_STANDARD_GRAVITY away from the center of the
+/// rest will have an value of `standard_gravity` away from the center of the
 /// earth, which is a positive Y value.
 ///
 /// - `values[0]`: Acceleration on the x axis

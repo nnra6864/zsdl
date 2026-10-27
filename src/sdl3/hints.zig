@@ -1686,7 +1686,7 @@ pub const hint_joystick_haptic_axes = "SDL_JOYSTICK_HAPTIC_AXES";
 /// - "none": Keycode options are cleared, this overrides other options.
 /// - "hide_numpad": The numpad keysyms will be translated into their
 ///   non-numpad versions based on the current NumLock state. For example,
-///   SDLK_KP_4 would become SDLK_4 if SDL_KMOD_NUM is set in the event
+///   SDLK_KP_4 would become SDLK_4 if `Keymod.num` is set in the event
 ///   modifiers, and SDLK_LEFT if it is unset.
 /// - "french_numbers": The number row on French keyboards is inverted, so
 ///   pressing the 1 key would yield the keycode SDLK_1, or '1', instead of
@@ -2584,10 +2584,10 @@ pub const hint_video_force_egl = "SDL_VIDEO_FORCE_EGL";
 /// The variable can be set to the following values:
 ///
 /// - "0": Disable Spaces support (FULLSCREEN_DESKTOP won't use them and
-///   SDL_WINDOW_RESIZABLE windows won't offer the "fullscreen" button on their
+///   `WindowFlags.resizable` windows won't offer the "fullscreen" button on their
 ///   titlebars).
 /// - "1": Enable Spaces support (FULLSCREEN_DESKTOP will use them and
-///   SDL_WINDOW_RESIZABLE windows will offer the "fullscreen" button on their
+///   `WindowFlags.resizable` windows will offer the "fullscreen" button on their
 ///   titlebars). (default)
 ///
 /// This hint should be set before creating a window.
@@ -3217,8 +3217,8 @@ pub const hint_x11_force_override_redirect = "SDL_X11_FORCE_OVERRIDE_REDIRECT";
 ///
 /// During `createWindow`, SDL uses the _NET_WM_WINDOW_TYPE X11 property to
 /// report to the window manager the type of window it wants to create. This
-/// might be set to various things if SDL_WINDOW_TOOLTIP or
-/// SDL_WINDOW_POPUP_MENU, etc, were specified. For "normal" windows that
+/// might be set to various things if `WindowFlags.tooltip` or
+/// `WindowFlags.popup_menu`, etc, were specified. For "normal" windows that
 /// haven't set a specific type, this hint can be used to specify a custom
 /// type. For example, a dock window might set this to
 /// "_NET_WM_WINDOW_TYPE_DOCK".

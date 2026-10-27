@@ -59,7 +59,7 @@ pub fn registerApp(name: ?[:0]const u8, style: u32, hInst: ?*anyopaque) Error!vo
 }
 extern fn SDL_RegisterApp(name: ?[*:0]const u8, style: u32, hInst: ?*anyopaque) bool;
 
-/// Deregister the win32 window class from an `registerApp` call.
+/// Deregister the win32 window class from a `registerApp` call.
 ///
 /// This can be called to undo the effects of `registerApp`.
 ///

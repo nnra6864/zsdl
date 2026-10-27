@@ -326,7 +326,7 @@ extern fn SDL_GetSemaphoreValue(sem: *Semaphore) u32;
 
 /// A means to block multiple threads until a condition is satisfied.
 ///
-/// Condition variables, paired with an `Mutex`, let an app halt multiple
+/// Condition variables, paired with a `Mutex`, let an app halt multiple
 /// threads until a condition has occurred, at which time the app can release
 /// one or all waiting threads.
 ///

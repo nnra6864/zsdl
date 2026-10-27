@@ -569,7 +569,7 @@ pub const Colorspace = enum(u32) {
 /// A structure that represents a color as RGBA components.
 ///
 /// The bits of this structure can be directly reinterpreted as an
-/// integer-packed color which uses the SDL_PIXELFORMAT_RGBA32 format
+/// integer-packed color which uses the `PixelFormat.rgba32` format
 /// (`PixelFormat.abgr8888` on little-endian systems and
 /// `PixelFormat.rgba8888` on big-endian systems).
 pub const Color = extern struct {
@@ -646,7 +646,7 @@ extern fn SDL_GetMasksForPixelFormat(format: PixelFormat, bpp: *c_int, Rmask: *u
 pub const getPixelFormatForMasks = SDL_GetPixelFormatForMasks;
 extern fn SDL_GetPixelFormatForMasks(bpp: c_int, Rmask: u32, Gmask: u32, Bmask: u32, Amask: u32) PixelFormat;
 
-/// Create an `PixelFormatDetails` structure corresponding to a pixel format.
+/// Create a `PixelFormatDetails` structure corresponding to a pixel format.
 ///
 /// Returned structure may come from a shared global cache (i.e. not newly
 /// allocated), and hence should not be modified, especially the palette. Weird

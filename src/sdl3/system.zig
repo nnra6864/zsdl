@@ -227,7 +227,7 @@ extern fn SDL_GetAndroidInternalStoragePath() ?[*:0]const u8;
 /// Get the current state of external storage for this Android application.
 ///
 /// The current state of external storage, a bitmask of these values:
-/// SDL_ANDROID_EXTERNAL_STORAGE_READ, SDL_ANDROID_EXTERNAL_STORAGE_WRITE.
+/// `android_external_storage_read`, `android_external_storage_write`.
 ///
 /// If external storage is currently unavailable, this will return 0.
 pub const getAndroidExternalStorageState = SDL_GetAndroidExternalStorageState;

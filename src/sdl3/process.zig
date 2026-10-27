@@ -111,19 +111,19 @@ pub const ProcessIO = enum(c_int) {
 /// - `Process.Properties.create_environment_pointer`: an `Environment`
 ///   pointer. If this property is set, it will be the entire environment for
 ///   the process, otherwise the current environment is used.
-/// - `Process.Properties.create_stdin_number`: an `ProcessIO` value describing
+/// - `Process.Properties.create_stdin_number`: a `ProcessIO` value describing
 ///   where standard input for the process comes from, defaults to
 ///   `ProcessIO.@"null"`.
 /// - `Process.Properties.create_stdin_pointer`: an `IOStream` pointer used for
 ///   standard input when `Process.Properties.create_stdin_number` is set to
 ///   `ProcessIO.redirect`.
-/// - `Process.Properties.create_stdout_number`: an `ProcessIO` value
+/// - `Process.Properties.create_stdout_number`: a `ProcessIO` value
 ///   describing where standard output for the process goes to, defaults to
 ///   `ProcessIO.inherited`.
 /// - `Process.Properties.create_stdout_pointer`: an `IOStream` pointer used
 ///   for standard output when `Process.Properties.create_stdout_number` is set
 ///   to `ProcessIO.redirect`.
-/// - `Process.Properties.create_stderr_number`: an `ProcessIO` value
+/// - `Process.Properties.create_stderr_number`: a `ProcessIO` value
 ///   describing where standard error for the process goes to, defaults to
 ///   `ProcessIO.inherited`.
 /// - `Process.Properties.create_stderr_pointer`: an `IOStream` pointer used

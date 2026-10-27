@@ -9,23 +9,23 @@ const makeError = sdl.makeError;
 
 /// Mask of bits in an `AudioFormat` that contains the format bit size.
 ///
-/// Generally one should use SDL_AUDIO_BITSIZE instead of this macro directly.
+/// Generally one should use `AudioFormat.bitSize` instead of this macro directly.
 pub const audio_mask_bitsize: u32 = 0xFF;
 
 /// Mask of bits in an `AudioFormat` that contain the floating point flag.
 ///
-/// Generally one should use SDL_AUDIO_ISFLOAT instead of this macro directly.
+/// Generally one should use `AudioFormat.isFloat` instead of this macro directly.
 pub const audio_mask_float: u32 = 1 << 8;
 
 /// Mask of bits in an `AudioFormat` that contain the bigendian flag.
 ///
-/// Generally one should use SDL_AUDIO_ISBIGENDIAN or SDL_AUDIO_ISLITTLEENDIAN
+/// Generally one should use `AudioFormat.isBigEndian` or `AudioFormat.isLittleEndian`
 /// instead of this macro directly.
 pub const audio_mask_big_endian: u32 = 1 << 12;
 
 /// Mask of bits in an `AudioFormat` that contain the signed data flag.
 ///
-/// Generally one should use SDL_AUDIO_ISSIGNED instead of this macro directly.
+/// Generally one should use `AudioFormat.isSigned` instead of this macro directly.
 pub const audio_mask_signed: u32 = 1 << 15;
 
 /// Audio format.
@@ -301,8 +301,8 @@ extern fn SDL_GetAudioDeviceName(devid: AudioDeviceId) ?[*:0]const u8;
 /// using. If the device isn't yet opened, this will report the device's
 /// preferred format (or a reasonable default if this can't be determined).
 ///
-/// You may also specify SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK or
-/// SDL_AUDIO_DEVICE_DEFAULT_RECORDING here, which is useful for getting a
+/// You may also specify `audio_device_default_playback` or
+/// `audio_device_default_recording` here, which is useful for getting a
 /// reasonable recommendation before opening the system-recommended default
 /// device.
 ///
@@ -355,8 +355,8 @@ extern fn SDL_GetAudioDeviceChannelMap(devid: AudioDeviceId, count: ?*c_int) ?[*
 /// function).
 ///
 /// If you don't care about opening a specific device, pass a `devid` of either
-/// SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK or
-/// SDL_AUDIO_DEVICE_DEFAULT_RECORDING. In this case, SDL will try to pick
+/// `audio_device_default_playback` or
+/// `audio_device_default_recording`. In this case, SDL will try to pick
 /// the most reasonable default, and may also switch between physical devices
 /// seamlessly later, if the most reasonable default changes during the
 /// lifetime of this opened device (user changed the default in the OS's system
@@ -1100,8 +1100,8 @@ extern fn SDL_DestroyAudioStream(stream: *AudioStream) void;
 /// this information later.
 ///
 /// If you don't care about opening a specific audio device, you can (and
-/// probably _should_), use SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK for playback and
-/// SDL_AUDIO_DEVICE_DEFAULT_RECORDING for recording.
+/// probably _should_), use `audio_device_default_playback` for playback and
+/// `audio_device_default_recording` for recording.
 ///
 /// One can optionally provide a callback function; if null, the app is
 /// expected to queue audio data for playback (or unqueue audio data if

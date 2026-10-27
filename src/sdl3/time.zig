@@ -70,7 +70,7 @@ pub fn getCurrentTime() Error!sdl.Time {
 }
 extern fn SDL_GetCurrentTime(ticks: *sdl.Time) bool;
 
-/// Converts an `Time` in nanoseconds since the epoch to a calendar time in
+/// Converts a `Time` in nanoseconds since the epoch to a calendar time in
 /// the `DateTime` format.
 pub fn timeToDateTime(ticks: sdl.Time, localTime: bool) Error!DateTime {
     var dt: DateTime = undefined;
@@ -79,7 +79,7 @@ pub fn timeToDateTime(ticks: sdl.Time, localTime: bool) Error!DateTime {
 }
 extern fn SDL_TimeToDateTime(ticks: sdl.Time, dt: *DateTime, localTime: bool) bool;
 
-/// Converts a calendar time to an `Time` in nanoseconds since the epoch.
+/// Converts a calendar time to a `Time` in nanoseconds since the epoch.
 ///
 /// This function ignores the day_of_week member of the `DateTime` struct, so
 /// it may remain unset.
