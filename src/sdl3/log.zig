@@ -1,12 +1,13 @@
 //! Log Handling (SDL_log.h)
 
 const std = @import("std");
-const assert = std.debug.assert;
 
 const sdl = @import("../sdl3.zig");
 const Error = sdl.Error;
 const makeError = sdl.makeError;
 
+/// The maximum size of a log message prior to SDL 3.0.0 (and of messages
+/// formatted by these bindings).
 pub const max_log_message = 4096;
 
 /// The predefined log categories
@@ -14,8 +15,11 @@ pub const max_log_message = 4096;
 /// By default the application and gpu categories are enabled at the INFO
 /// level, the assert category is enabled at the WARN level, test is enabled at
 /// the VERBOSE level and all other categories are enabled at the ERROR level.
+///
+/// Values from `custom` onwards are free to use for application-defined
+/// categories, e.g. `@enumFromInt(@intFromEnum(LogCategory.custom) + 1)`.
 pub const LogCategory = enum(c_int) {
-    application = 0,
+    application,
     @"error",
     assert,
     system,
@@ -25,6 +29,8 @@ pub const LogCategory = enum(c_int) {
     input,
     @"test",
     gpu,
+
+    // Reserved for future SDL library use
     reserved2,
     reserved3,
     reserved4,
@@ -34,13 +40,15 @@ pub const LogCategory = enum(c_int) {
     reserved8,
     reserved9,
     reserved10,
+
+    /// Beyond this point is reserved for application use.
     custom,
     _,
 };
 
 /// The predefined log priorities
 pub const LogPriority = enum(c_int) {
-    invalid = 0,
+    invalid,
     trace,
     verbose,
     debug,
@@ -51,204 +59,113 @@ pub const LogPriority = enum(c_int) {
 };
 
 /// Set the priority of all log categories.
-pub fn setLogPriorities(priority: LogPriority) void {
-    SDL_SetLogPriorities(priority);
-}
+pub const setLogPriorities = SDL_SetLogPriorities;
 extern fn SDL_SetLogPriorities(priority: LogPriority) void;
 
 /// Set the priority of a particular log category.
-pub fn setLogPriority(category: LogCategory, priority: LogPriority) void {
-    SDL_SetLogPriority(@backingInt(category), priority);
-}
-extern fn SDL_SetLogPriority(category: c_int, priority: LogPriority) void;
+pub const setLogPriority = SDL_SetLogPriority;
+extern fn SDL_SetLogPriority(category: LogCategory, priority: LogPriority) void;
 
 /// Get the priority of a particular log category.
-pub fn getLogPriority(category: LogCategory) LogPriority {
-    return SDL_GetLogPriority(@backingInt(category));
-}
-extern fn SDL_GetLogPriority(category: c_int) LogPriority;
+pub const getLogPriority = SDL_GetLogPriority;
+extern fn SDL_GetLogPriority(category: LogCategory) LogPriority;
 
 /// Reset all priorities to default.
 ///
-/// This is called by quit().
+/// This is called by `quit`.
 pub const resetLogPriorities = SDL_ResetLogPriorities;
 extern fn SDL_ResetLogPriorities() void;
 
 /// Set the text prepended to log messages of a given priority.
 ///
-/// By default INFO and below have no prefix, and WARN and higher have a prefix
-/// showing their priority, e.g. "WARNING: ".
+/// By default `LogPriority.info` and below have no prefix, and
+/// `LogPriority.warn` and higher have a prefix showing their priority, e.g.
+/// "WARNING: ".
+///
+/// This function makes a copy of its string argument, `prefix`, so it is not
+/// necessary to keep the value of `prefix` alive after the call returns.
 pub fn setLogPriorityPrefix(priority: LogPriority, prefix: ?[:0]const u8) Error!void {
-    if (!SDL_SetLogPriorityPrefix(
-        priority,
-        if (prefix) |p| @ptrCast(p.ptr) else null,
-    )) {
-        return makeError();
-    }
+    if (!SDL_SetLogPriorityPrefix(priority, if (prefix) |s| s.ptr else null)) return makeError();
 }
-extern fn SDL_SetLogPriorityPrefix(priority: LogPriority, prefix: [*c]const u8) bool;
+extern fn SDL_SetLogPriorityPrefix(priority: LogPriority, prefix: ?[*:0]const u8) bool;
 
-/// Log a message with SDL_LOG_CATEGORY_APPLICATION and SDL_LOG_PRIORITY_INFO.
+/// Formats `fmt` with `std.fmt` into `buf`, truncating messages that don't fit.
+fn formatMessage(buf: *[max_log_message]u8, comptime fmt: []const u8, args: anytype) [:0]const u8 {
+    return std.fmt.bufPrintSentinel(buf, fmt, args, 0) catch {
+        buf[buf.len - 1] = 0;
+        return buf[0 .. buf.len - 1 :0];
+    };
+}
+
+/// Log a message with `LogCategory.application` and `LogPriority.info`.
+///
+/// The message is formatted with `std.fmt`. Messages longer than
+/// `max_log_message` bytes are truncated.
 pub fn log(comptime fmt: []const u8, args: anytype) void {
-    assert(fmt.len > 0 and fmt.len < max_log_message - 1);
     var buf: [max_log_message]u8 = undefined;
-    const message = std.fmt.bufPrintSentinel(&buf, fmt, args, 0) catch |err| switch (err) {
-        std.fmt.BufPrintError.NoSpaceLeft => {
-            SDL_LogError(
-                @backingInt(LogCategory.assert),
-                "(log message exceeded %d characters)",
-                @as(u32, max_log_message),
-            );
-            return;
-        },
-    };
-    SDL_Log(@ptrCast(message.ptr));
+    SDL_Log("%s", formatMessage(&buf, fmt, args).ptr);
 }
-extern fn SDL_Log(fmt: [*c]const u8, ...) void;
+extern fn SDL_Log(fmt: [*:0]const u8, ...) void;
 
-/// Log a message with SDL_LOG_PRIORITY_TRACE.
+/// Log a message with `LogPriority.trace`.
 pub fn logTrace(category: LogCategory, comptime fmt: []const u8, args: anytype) void {
-    assert(fmt.len > 0 and fmt.len < max_log_message - 1);
     var buf: [max_log_message]u8 = undefined;
-    const message = std.fmt.bufPrintSentinel(&buf, fmt, args, 0) catch |err| switch (err) {
-        std.fmt.BufPrintError.NoSpaceLeft => {
-            SDL_LogError(
-                @backingInt(LogCategory.assert),
-                "(log message exceeded %d characters)",
-                @as(u32, max_log_message),
-            );
-            return;
-        },
-    };
-    SDL_LogTrace(@backingInt(category), @ptrCast(message.ptr));
+    SDL_LogTrace(category, "%s", formatMessage(&buf, fmt, args).ptr);
 }
-extern fn SDL_LogTrace(category: c_int, fmt: [*c]const u8, ...) void;
+extern fn SDL_LogTrace(category: LogCategory, fmt: [*:0]const u8, ...) void;
 
-/// Log a message with SDL_LOG_PRIORITY_VERBOSE.
+/// Log a message with `LogPriority.verbose`.
 pub fn logVerbose(category: LogCategory, comptime fmt: []const u8, args: anytype) void {
-    assert(fmt.len > 0 and fmt.len < max_log_message - 1);
     var buf: [max_log_message]u8 = undefined;
-    const message = std.fmt.bufPrintSentinel(&buf, fmt, args, 0) catch |err| switch (err) {
-        std.fmt.BufPrintError.NoSpaceLeft => {
-            SDL_LogError(
-                @backingInt(LogCategory.assert),
-                "(log message exceeded %d characters)",
-                @as(u32, max_log_message),
-            );
-            return;
-        },
-    };
-    SDL_LogVerbose(@backingInt(category), @ptrCast(message.ptr));
+    SDL_LogVerbose(category, "%s", formatMessage(&buf, fmt, args).ptr);
 }
-extern fn SDL_LogVerbose(category: c_int, fmt: [*c]const u8, ...) void;
+extern fn SDL_LogVerbose(category: LogCategory, fmt: [*:0]const u8, ...) void;
 
-/// Log a message with SDL_LOG_PRIORITY_DEBUG.
+/// Log a message with `LogPriority.debug`.
 pub fn logDebug(category: LogCategory, comptime fmt: []const u8, args: anytype) void {
-    assert(fmt.len > 0 and fmt.len < max_log_message - 1);
     var buf: [max_log_message]u8 = undefined;
-    const message = std.fmt.bufPrintSentinel(&buf, fmt, args, 0) catch |err| switch (err) {
-        std.fmt.BufPrintError.NoSpaceLeft => {
-            SDL_LogError(
-                @backingInt(LogCategory.assert),
-                "(log message exceeded %d characters)",
-                @as(u32, max_log_message),
-            );
-            return;
-        },
-    };
-    SDL_LogDebug(@backingInt(category), @ptrCast(message.ptr));
+    SDL_LogDebug(category, "%s", formatMessage(&buf, fmt, args).ptr);
 }
-extern fn SDL_LogDebug(category: c_int, fmt: [*c]const u8, ...) void;
+extern fn SDL_LogDebug(category: LogCategory, fmt: [*:0]const u8, ...) void;
 
-/// Log a message with SDL_LOG_PRIORITY_INFO.
+/// Log a message with `LogPriority.info`.
 pub fn logInfo(category: LogCategory, comptime fmt: []const u8, args: anytype) void {
-    assert(fmt.len > 0 and fmt.len < max_log_message - 1);
     var buf: [max_log_message]u8 = undefined;
-    const message = std.fmt.bufPrintSentinel(&buf, fmt, args, 0) catch |err| switch (err) {
-        std.fmt.BufPrintError.NoSpaceLeft => {
-            SDL_LogError(
-                @backingInt(LogCategory.assert),
-                "(log message exceeded %d characters)",
-                @as(u32, max_log_message),
-            );
-            return;
-        },
-    };
-    SDL_LogInfo(@backingInt(category), @ptrCast(message.ptr));
+    SDL_LogInfo(category, "%s", formatMessage(&buf, fmt, args).ptr);
 }
-extern fn SDL_LogInfo(category: c_int, fmt: [*c]const u8, ...) void;
+extern fn SDL_LogInfo(category: LogCategory, fmt: [*:0]const u8, ...) void;
 
-/// Log a message with SDL_LOG_PRIORITY_WARN.
+/// Log a message with `LogPriority.warn`.
 pub fn logWarn(category: LogCategory, comptime fmt: []const u8, args: anytype) void {
-    assert(fmt.len > 0 and fmt.len < max_log_message - 1);
     var buf: [max_log_message]u8 = undefined;
-    const message = std.fmt.bufPrintSentinel(&buf, fmt, args, 0) catch |err| switch (err) {
-        std.fmt.BufPrintError.NoSpaceLeft => {
-            SDL_LogError(
-                @backingInt(LogCategory.assert),
-                "(log message exceeded %d characters)",
-                @as(u32, max_log_message),
-            );
-            return;
-        },
-    };
-    SDL_LogWarn(@backingInt(category), @ptrCast(message.ptr));
+    SDL_LogWarn(category, "%s", formatMessage(&buf, fmt, args).ptr);
 }
-extern fn SDL_LogWarn(category: c_int, fmt: [*c]const u8, ...) void;
+extern fn SDL_LogWarn(category: LogCategory, fmt: [*:0]const u8, ...) void;
 
-/// Log a message with SDL_LOG_PRIORITY_ERROR.
+/// Log a message with `LogPriority.error`.
 pub fn logError(category: LogCategory, comptime fmt: []const u8, args: anytype) void {
-    assert(fmt.len > 0 and fmt.len < max_log_message - 1);
     var buf: [max_log_message]u8 = undefined;
-    const message = std.fmt.bufPrintSentinel(&buf, fmt, args, 0) catch |err| switch (err) {
-        std.fmt.BufPrintError.NoSpaceLeft => {
-            SDL_LogError(
-                @backingInt(LogCategory.assert),
-                "(log message exceeded %d characters)",
-                @as(u32, max_log_message),
-            );
-            return;
-        },
-    };
-    SDL_LogError(@backingInt(category), @ptrCast(message.ptr));
+    SDL_LogError(category, "%s", formatMessage(&buf, fmt, args).ptr);
 }
-extern fn SDL_LogError(category: c_int, fmt: [*c]const u8, ...) void;
+extern fn SDL_LogError(category: LogCategory, fmt: [*:0]const u8, ...) void;
 
-/// Log a message with SDL_LOG_PRIORITY_CRITICAL.
+/// Log a message with `LogPriority.critical`.
 pub fn logCritical(category: LogCategory, comptime fmt: []const u8, args: anytype) void {
-    assert(fmt.len > 0 and fmt.len < max_log_message - 1);
     var buf: [max_log_message]u8 = undefined;
-    const message = std.fmt.bufPrintSentinel(&buf, fmt, args, 0) catch |err| switch (err) {
-        std.fmt.BufPrintError.NoSpaceLeft => {
-            SDL_LogError(
-                @backingInt(LogCategory.assert),
-                "(log message exceeded %d characters)",
-                @as(u32, max_log_message),
-            );
-            return;
-        },
-    };
-    SDL_LogCritical(@backingInt(category), @ptrCast(message.ptr));
+    SDL_LogCritical(category, "%s", formatMessage(&buf, fmt, args).ptr);
 }
-extern fn SDL_LogCritical(category: c_int, fmt: [*c]const u8, ...) void;
+extern fn SDL_LogCritical(category: LogCategory, fmt: [*:0]const u8, ...) void;
 
 /// Log a message with the specified category and priority.
 pub fn logMessage(category: LogCategory, priority: LogPriority, comptime fmt: []const u8, args: anytype) void {
-    assert(fmt.len > 0 and fmt.len < max_log_message - 1);
     var buf: [max_log_message]u8 = undefined;
-    const message = std.fmt.bufPrintSentinel(&buf, fmt, args, 0) catch |err| switch (err) {
-        std.fmt.BufPrintError.NoSpaceLeft => {
-            SDL_LogError(
-                @backingInt(LogCategory.assert),
-                "(log message exceeded %d characters)",
-                @as(u32, max_log_message),
-            );
-            return;
-        },
-    };
-    SDL_LogMessage(@backingInt(category), priority, @ptrCast(message.ptr));
+    SDL_LogMessage(category, priority, "%s", formatMessage(&buf, fmt, args).ptr);
 }
-extern fn SDL_LogMessage(category: c_int, priority: LogPriority, fmt: [*c]const u8, ...) void;
+extern fn SDL_LogMessage(category: LogCategory, priority: LogPriority, fmt: [*:0]const u8, ...) void;
+
+/// Log a message with the specified category and priority.
+pub const logMessageV = SDL_LogMessageV;
+extern fn SDL_LogMessageV(category: LogCategory, priority: LogPriority, fmt: [*:0]const u8, ap: std.builtin.VaList) void;
 
 /// The prototype for the log output callback function.
 ///
@@ -257,9 +174,9 @@ extern fn SDL_LogMessage(category: c_int, priority: LogPriority, fmt: [*c]const 
 /// once.
 pub const LogOutputFunction = *const fn (
     userdata: ?*anyopaque,
-    category: c_int,
+    category: LogCategory,
     priority: LogPriority,
-    message: [*c]const u8,
+    message: [*:0]const u8,
 ) callconv(.c) void;
 
 /// Get the default log output function.
@@ -267,13 +184,14 @@ pub const getDefaultLogOutputFunction = SDL_GetDefaultLogOutputFunction;
 extern fn SDL_GetDefaultLogOutputFunction() LogOutputFunction;
 
 /// Get the current log output function.
-pub fn getLogOutputFunction(callback: *LogOutputFunction, userdata: *?*anyopaque) void {
-    SDL_GetLogOutputFunction(callback, userdata);
+pub fn getLogOutputFunction() struct { callback: LogOutputFunction, userdata: ?*anyopaque } {
+    var callback: LogOutputFunction = undefined;
+    var userdata: ?*anyopaque = undefined;
+    SDL_GetLogOutputFunction(&callback, &userdata);
+    return .{ .callback = callback, .userdata = userdata };
 }
-extern fn SDL_GetLogOutputFunction(callback: *LogOutputFunction, userdata: *?*anyopaque) void;
+extern fn SDL_GetLogOutputFunction(callback: ?*LogOutputFunction, userdata: ?*?*anyopaque) void;
 
 /// Replace the default log output function with one of your own.
-pub fn setLogOutputFunction(callback: LogOutputFunction, userdata: ?*anyopaque) void {
-    SDL_SetLogOutputFunction(callback, userdata);
-}
+pub const setLogOutputFunction = SDL_SetLogOutputFunction;
 extern fn SDL_SetLogOutputFunction(callback: LogOutputFunction, userdata: ?*anyopaque) void;

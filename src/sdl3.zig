@@ -400,6 +400,7 @@ pub const logWarn = log_h.logWarn;
 pub const logError = log_h.logError;
 pub const logCritical = log_h.logCritical;
 pub const logMessage = log_h.logMessage;
+pub const logMessageV = log_h.logMessageV;
 pub const LogOutputFunction = log_h.LogOutputFunction;
 pub const getDefaultLogOutputFunction = log_h.getDefaultLogOutputFunction;
 pub const getLogOutputFunction = log_h.getLogOutputFunction;
@@ -409,13 +410,32 @@ pub const setLogOutputFunction = log_h.setLogOutputFunction;
 // Assertions (SDL_assert.h)
 //--------------------------------------------------------------------------------------------------
 const assert_h = @import("sdl3/assert.zig");
+pub const AssertState = assert_h.AssertState;
+pub const AssertData = assert_h.AssertData;
+pub const reportAssertion = assert_h.reportAssertion;
+pub const AssertionHandler = assert_h.AssertionHandler;
+pub const setAssertionHandler = assert_h.setAssertionHandler;
+pub const getDefaultAssertionHandler = assert_h.getDefaultAssertionHandler;
+pub const getAssertionHandler = assert_h.getAssertionHandler;
+pub const getAssertionReport = assert_h.getAssertionReport;
+pub const resetAssertionReport = assert_h.resetAssertionReport;
 
 //--------------------------------------------------------------------------------------------------
 // Querying SDL Version (SDL_version.h)
 //--------------------------------------------------------------------------------------------------
 const version_h = @import("sdl3/version.zig");
+pub const major_version = version_h.major_version;
+pub const minor_version = version_h.minor_version;
+pub const micro_version = version_h.micro_version;
 pub const Version = version_h.Version;
+pub const versionNum = version_h.versionNum;
+pub const versionNumMajor = version_h.versionNumMajor;
+pub const versionNumMinor = version_h.versionNumMinor;
+pub const versionNumMicro = version_h.versionNumMicro;
+pub const version = version_h.version;
+pub const versionAtLeast = version_h.versionAtLeast;
 pub const getVersion = version_h.getVersion;
+pub const getRevision = version_h.getRevision;
 
 //--------------------------------------------------------------------------------------------------
 // Display and Window Management (SDL_video.h)
