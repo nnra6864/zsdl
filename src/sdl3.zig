@@ -811,6 +811,19 @@ pub const writeSurfacePixelFloat = surface_h.writeSurfacePixelFloat;
 // Clipboard Handling (SDL_clipboard.h)
 //--------------------------------------------------------------------------------------------------
 const clipboard_h = @import("sdl3/clipboard.zig");
+pub const setClipboardText = clipboard_h.setClipboardText;
+pub const getClipboardText = clipboard_h.getClipboardText;
+pub const hasClipboardText = clipboard_h.hasClipboardText;
+pub const setPrimarySelectionText = clipboard_h.setPrimarySelectionText;
+pub const getPrimarySelectionText = clipboard_h.getPrimarySelectionText;
+pub const hasPrimarySelectionText = clipboard_h.hasPrimarySelectionText;
+pub const ClipboardDataCallback = clipboard_h.ClipboardDataCallback;
+pub const ClipboardCleanupCallback = clipboard_h.ClipboardCleanupCallback;
+pub const setClipboardData = clipboard_h.setClipboardData;
+pub const clearClipboardData = clipboard_h.clearClipboardData;
+pub const getClipboardData = clipboard_h.getClipboardData;
+pub const hasClipboardData = clipboard_h.hasClipboardData;
+pub const getClipboardMimeTypes = clipboard_h.getClipboardMimeTypes;
 
 //--------------------------------------------------------------------------------------------------
 // Vulkan Support (SDL_vulkan.h)
@@ -822,6 +835,8 @@ pub const vk = vulkan_h.vk;
 // Metal Support (SDL_metal.h)
 //--------------------------------------------------------------------------------------------------
 const metal_h = @import("sdl3/metal.zig");
+pub const MetalView = metal_h.MetalView;
+pub const metal = metal_h.metal;
 
 //--------------------------------------------------------------------------------------------------
 // Camera (SDL_camera.h)
