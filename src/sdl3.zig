@@ -941,22 +941,42 @@ pub const getKeyboardState = keyboard_h.getKeyboardState;
 pub const resetKeyboard = keyboard_h.resetKeyboard;
 pub const getModState = keyboard_h.getModState;
 pub const setModState = keyboard_h.setModState;
+pub const getKeyFromScancode = keyboard_h.getKeyFromScancode;
+pub const getScancodeFromKey = keyboard_h.getScancodeFromKey;
+pub const setScancodeName = keyboard_h.setScancodeName;
+pub const getScancodeName = keyboard_h.getScancodeName;
+pub const getScancodeFromName = keyboard_h.getScancodeFromName;
+pub const getKeyName = keyboard_h.getKeyName;
+pub const getKeyFromName = keyboard_h.getKeyFromName;
+pub const startTextInput = keyboard_h.startTextInput;
+pub const TextInputType = keyboard_h.TextInputType;
+pub const Capitalization = keyboard_h.Capitalization;
+pub const startTextInputWithProperties = keyboard_h.startTextInputWithProperties;
+pub const prop_textinput_capitalization_number = keyboard_h.prop_textinput_capitalization_number;
+pub const prop_textinput_autocorrect_boolean = keyboard_h.prop_textinput_autocorrect_boolean;
+pub const prop_textinput_multiline_boolean = keyboard_h.prop_textinput_multiline_boolean;
+pub const prop_textinput_android_inputtype_number = keyboard_h.prop_textinput_android_inputtype_number;
+pub const textInputActive = keyboard_h.textInputActive;
+pub const stopTextInput = keyboard_h.stopTextInput;
+pub const clearComposition = keyboard_h.clearComposition;
+pub const setTextInputArea = keyboard_h.setTextInputArea;
+pub const getTextInputArea = keyboard_h.getTextInputArea;
+pub const hasScreenKeyboardSupport = keyboard_h.hasScreenKeyboardSupport;
+pub const screenKeyboardShown = keyboard_h.screenKeyboardShown;
 
 //--------------------------------------------------------------------------------------------------
 // Keyboard Scancodes (SDL_scancode.h)
 //--------------------------------------------------------------------------------------------------
 const scancode_h = @import("sdl3/scancode.zig");
 pub const Scancode = scancode_h.Scancode;
-pub const SCANCODE_TO_KEYCODE = scancode_h.SCANCODE_TO_KEYCODE;
 
 //--------------------------------------------------------------------------------------------------
 // Keyboard Keycodes (SDL_keycode.h)
 //--------------------------------------------------------------------------------------------------
 const keycode_h = @import("sdl3/keycode.zig");
 pub const Keycode = keycode_h.Keycode;
+pub const scancodeToKeycode = keycode_h.scancodeToKeycode;
 pub const Keymod = keycode_h.Keymod;
-pub const TextInputType = keycode_h.TextInputType;
-pub const Capitalization = keycode_h.Capitalization;
 
 //--------------------------------------------------------------------------------------------------
 // Mouse Support (SDL_mouse.h)

@@ -10,12 +10,13 @@ const sdl = @import("../sdl3.zig");
 /// independent of language and keyboard mapping.
 ///
 /// Values of this type are used to represent keyboard keys, among other places
-/// in the `scancode` field of the SDL_KeyboardEvent structure.
+/// in the `scancode` field of the `KeyboardEvent` structure.
 ///
 /// The values in this enumeration are based on the USB usage page standard:
 /// https://usb.org/sites/default/files/hut1_5.pdf
 pub const Scancode = enum(u32) {
     unknown = 0,
+    /// Usage page 0x07  These values are from usage page 0x07 (USB keyboard page).
     a = 4,
     b = 5,
     c = 6,
@@ -61,10 +62,13 @@ pub const Scancode = enum(u32) {
     equals = 46,
     leftbracket = 47,
     rightbracket = 48,
+    /// Located at the lower left of the return key on ISO keyboards and at the right end of the QWERTY row on ANSI keyboards. Produces REVERSE SOLIDUS (backslash) and VERTICAL LINE in a US layout, REVERSE SOLIDUS and VERTICAL LINE in a UK Mac layout, NUMBER SIGN and TILDE in a UK Windows layout, DOLLAR SIGN and POUND SIGN in a Swiss German layout, NUMBER SIGN and APOSTROPHE in a German layout, GRAVE ACCENT and POUND SIGN in a French Mac layout, and ASTERISK and MICRO SIGN in a French Windows layout.
     backslash = 49,
+    /// ISO USB keyboards actually use this code instead of 49 for the same key, but all OSes I've seen treat the two codes identically. So, as an implementor, unless your keyboard generates both of those codes and your OS treats them differently, you should generate `Scancode.backslash` instead of this code. As a user, you should not rely on this code because SDL will never generate it with most (all?) keyboards.
     nonushash = 50,
     semicolon = 51,
     apostrophe = 52,
+    /// Located in the top left corner (on both ANSI and ISO keyboards). Produces GRAVE ACCENT and TILDE in a US Windows layout and in US and UK Mac layouts on ANSI keyboards, GRAVE ACCENT and NOT SIGN in a UK Windows layout, SECTION SIGN and PLUS-MINUS SIGN in US and UK Mac layouts on ISO keyboards, SECTION SIGN and DEGREE SIGN in a Swiss German layout (Mac: only on ISO keyboards), CIRCUMFLEX ACCENT and DEGREE SIGN in a German layout (Mac: only on ISO keyboards), SUPERSCRIPT TWO and TILDE in a French Windows layout, COMMERCIAL AT and NUMBER SIGN in a French Mac layout on ISO keyboards, and LESS-THAN SIGN and GREATER-THAN SIGN in a Swiss German, German, or French Mac layout on ANSI keyboards.
     grave = 53,
     comma = 54,
     period = 55,
@@ -85,6 +89,7 @@ pub const Scancode = enum(u32) {
     printscreen = 70,
     scrolllock = 71,
     pause = 72,
+    /// insert on PC, help on some Mac keyboards (but does send code 73, not 117)
     insert = 73,
     home = 74,
     pageup = 75,
@@ -95,6 +100,7 @@ pub const Scancode = enum(u32) {
     left = 80,
     down = 81,
     up = 82,
+    /// num lock on PC, clear on Mac keyboards
     numlockclear = 83,
     kp_divide = 84,
     kp_multiply = 85,
@@ -112,8 +118,11 @@ pub const Scancode = enum(u32) {
     kp_9 = 97,
     kp_0 = 98,
     kp_period = 99,
+    /// This is the additional key that ISO keyboards have over ANSI ones, located between left shift and Z. Produces GRAVE ACCENT and TILDE in a US or UK Mac layout, REVERSE SOLIDUS (backslash) and VERTICAL LINE in a US or UK Windows layout, and LESS-THAN SIGN and GREATER-THAN SIGN in a Swiss German, German, or French layout.
     nonusbackslash = 100,
+    /// windows contextual menu, compose
     application = 101,
+    /// The USB document says this is a status flag, not a physical key - but some Mac keyboards do have a power key.
     power = 102,
     kp_equals = 103,
     f13 = 104,
@@ -129,24 +138,34 @@ pub const Scancode = enum(u32) {
     f23 = 114,
     f24 = 115,
     execute = 116,
+    /// AL Integrated Help Center
     help = 117,
+    /// Menu (show menu)
     menu = 118,
     select = 119,
+    /// AC Stop
     stop = 120,
+    /// AC Redo/Repeat
     again = 121,
+    /// AC Undo
     undo = 122,
+    /// AC Cut
     cut = 123,
+    /// AC Copy
     copy = 124,
+    /// AC Paste
     paste = 125,
+    /// AC Find
     find = 126,
     mute = 127,
     volumeup = 128,
     volumedown = 129,
-    // lockingcapslock, lockingnumlock, lockingscrolllock disabled in SDL_scancode.h
     kp_comma = 133,
     kp_equalsas400 = 134,
+    /// used on Asian keyboards, see footnotes in USB doc
     international1 = 135,
     international2 = 136,
+    /// Yen
     international3 = 137,
     international4 = 138,
     international5 = 139,
@@ -154,17 +173,28 @@ pub const Scancode = enum(u32) {
     international7 = 141,
     international8 = 142,
     international9 = 143,
+    /// Hangul/English toggle
     lang1 = 144,
+    /// Hanja conversion
     lang2 = 145,
+    /// Katakana
     lang3 = 146,
+    /// Hiragana
     lang4 = 147,
+    /// Zenkaku/Hankaku
     lang5 = 148,
+    /// reserved
     lang6 = 149,
+    /// reserved
     lang7 = 150,
+    /// reserved
     lang8 = 151,
+    /// reserved
     lang9 = 152,
+    /// Erase-Eaze
     alterase = 153,
     sysreq = 154,
+    /// AC Cancel
     cancel = 155,
     clear = 156,
     prior = 157,
@@ -223,50 +253,87 @@ pub const Scancode = enum(u32) {
     kp_hexadecimal = 221,
     lctrl = 224,
     lshift = 225,
+    /// alt, option
     lalt = 226,
+    /// windows, command (apple), meta
     lgui = 227,
     rctrl = 228,
     rshift = 229,
+    /// alt gr, option
     ralt = 230,
+    /// windows, command (apple), meta
     rgui = 231,
+    /// I'm not sure if this is really not covered by any of the above, but since there's a special SDL_KMOD_MODE for it I'm adding it here
     mode = 257,
+    /// Sleep
     sleep = 258,
+    /// Wake
     wake = 259,
+    /// Channel Increment
     channel_increment = 260,
+    /// Channel Decrement
     channel_decrement = 261,
+    /// Play
     media_play = 262,
+    /// Pause
     media_pause = 263,
+    /// Record
     media_record = 264,
+    /// Fast Forward
     media_fast_forward = 265,
+    /// Rewind
     media_rewind = 266,
+    /// Next Track
     media_next_track = 267,
+    /// Previous Track
     media_previous_track = 268,
+    /// Stop
     media_stop = 269,
+    /// Eject
     media_eject = 270,
+    /// Play / Pause
     media_play_pause = 271,
     media_select = 272,
+    /// AC New
     ac_new = 273,
+    /// AC Open
     ac_open = 274,
+    /// AC Close
     ac_close = 275,
+    /// AC Exit
     ac_exit = 276,
+    /// AC Save
     ac_save = 277,
+    /// AC Print
     ac_print = 278,
+    /// AC Properties
     ac_properties = 279,
+    /// AC Search
     ac_search = 280,
+    /// AC Home
     ac_home = 281,
+    /// AC Back
     ac_back = 282,
+    /// AC Forward
     ac_forward = 283,
+    /// AC Stop
     ac_stop = 284,
+    /// AC Refresh
     ac_refresh = 285,
+    /// AC Bookmarks
     ac_bookmarks = 286,
+    /// Usually situated below the display on phones and used as a multi-function feature key for selecting a software defined function shown on the bottom left of the display.
     softleft = 287,
+    /// Usually situated below the display on phones and used as a multi-function feature key for selecting a software defined function shown on the bottom right of the display.
     softright = 288,
+    /// Used for accepting phone calls.
     call = 289,
+    /// Used for rejecting phone calls.
     endcall = 290,
+    /// 400-500 reserved for dynamic keycodes
+    reserved = 400,
     _,
-    // 400 - 500 reserved for dynamic keyboard
-};
 
-pub inline fn SCANCODE_TO_KEYCODE(scancode: u32) u32 {
-    return scancode | (1 << 30);
-}
+    /// not a key, just marks the number of scancodes for array bounds
+    pub const count = 512;
+};
