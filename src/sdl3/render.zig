@@ -293,7 +293,7 @@ extern fn SDL_GetCurrentRenderOutputSize(renderer: *const Renderer, w: ?*c_int, 
 
 pub fn createTexture(
     renderer: *Renderer,
-    format: sdl.PixelFormatEnum,
+    format: sdl.PixelFormat,
     access: TextureAccess,
     width: c_int,
     height: c_int,
@@ -304,7 +304,7 @@ pub fn createTexture(
 }
 extern fn SDL_CreateTexture(
     renderer: *Renderer,
-    format: sdl.PixelFormatEnum,
+    format: sdl.PixelFormat,
     access: TextureAccess,
     w: c_int,
     h: c_int,
@@ -393,7 +393,7 @@ extern fn SDL_SetRenderTarget(renderer: *Renderer, texture: ?*const Texture) boo
 pub fn renderReadPixels(
     renderer: *const Renderer,
     _rect: ?*const sdl.Rect,
-    format: sdl.PixelFormatEnum,
+    format: sdl.PixelFormat,
     pixels: [*]u8,
     pitch: c_int,
 ) Error!void {
@@ -404,7 +404,7 @@ pub fn renderReadPixels(
 extern fn SDL_RenderReadPixels(
     renderer: *const Renderer,
     rect: ?*const sdl.Rect,
-    format: sdl.PixelFormatEnum,
+    format: sdl.PixelFormat,
     pixels: ?*anyopaque,
     pitch: c_int,
 ) bool;
