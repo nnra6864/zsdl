@@ -1226,6 +1226,7 @@ pub const updateSensors = sensor_h.updateSensors;
 // HIDAPI (SDL_hidapi.h)
 //--------------------------------------------------------------------------------------------------
 const hidapi_h = @import("sdl3/hidapi.zig");
+pub const hid = hidapi_h.hid;
 
 //--------------------------------------------------------------------------------------------------
 // Force Feedback Support (SDL_haptic.h)
